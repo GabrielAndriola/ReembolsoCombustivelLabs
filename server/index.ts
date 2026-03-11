@@ -33,5 +33,5 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(env.PORT, () => {
-  console.log(`Reembolso Combustivel Labs API running on http://localhost:${env.PORT}`);
+  console.log(`Reembolso Combustivel Labs API running on port ${env.PORT}`);
 });

@@ -10,6 +10,9 @@
     "dev:api": "tsx watch server/index.ts",
     "start": "npm run start:api",
     "start:api": "tsx server/index.ts",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts"
