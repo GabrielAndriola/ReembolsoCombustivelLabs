@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  EMPLOYEE
+}
+
+enum PresenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Company {
+  id               String           @id @default(cuid())
+  name             String
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  users            User[]
+  companyAddresses CompanyAddress[]
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  companyId          String
+  name               String
+  email              String             @unique
+  passwordHash       String
+  role               UserRole
+  active             Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeProfile    EmployeeProfile?
+  employeeAddresses  EmployeeAddress[]
+  monthlyRates       MonthlyRate[]
+  presenceRecords    PresenceRecord[]
+  supervisedProfiles EmployeeProfile[]  @relation("SupervisorProfiles")
+}
+
+model EmployeeProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  employeeCode         String   @unique
+  department           String
+  supervisorId         String?
+  distanceToCompanyKm  Decimal? @db.Decimal(10, 2)
+  distanceFromCompanyKm Decimal? @db.Decimal(10, 2)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supervisor           User?    @relation("SupervisorProfiles", fields: [supervisorId], references: [id])
+}
+
+model Address {
+  id                String            @id @default(cuid())
+  zipCode           String
+  street            String
+  number            String
+  complement        String?
+  district          String
+  city              String
+  state             String
+  country           String            @default("Brasil")
+  latitude          Decimal?          @db.Decimal(10, 7)
+  longitude         Decimal?          @db.Decimal(10, 7)
+  formattedAddress  String
+  companyAddresses  CompanyAddress[]
+  employeeAddresses EmployeeAddress[]
+}
+
+model CompanyAddress {
+  id        String  @id @default(cuid())
+  companyId String
+  addressId String
+  isMain    Boolean @default(true)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  address   Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, addressId])
+}
+
+model EmployeeAddress {
+  id             String  @id @default(cuid())
+  employeeUserId String
+  addressId      String
+  isMain         Boolean @default(true)
+  employee       User    @relation(fields: [employeeUserId], references: [id], onDelete: Cascade)
+  address        Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeUserId, addressId])
+}
+
+model MonthlyRate {
+  id                 String   @id @default(cuid())
+  employeeUserId     String
+  year               Int
+  month              Int
+  reimbursementPerKm Decimal  @db.Decimal(10, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  employee           User     @relation(fields: [employeeUserId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeUserId, year, month])
+}
+
+model PresenceRecord {
+  id                        String         @id @default(cuid())
+  employeeUserId            String
+  presenceDate              DateTime
+  observation               String?
+  distanceOneWayKm          Decimal        @db.Decimal(10, 2)
+  distanceRoundTripKm       Decimal        @db.Decimal(10, 2)
+  reimbursementPerKmApplied Decimal        @db.Decimal(10, 2)
+  reimbursementAmount       Decimal        @db.Decimal(10, 2)
+  status                    PresenceStatus @default(PENDING)
+  calculatedAt              DateTime       @default(now())
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  employee                  User           @relation(fields: [employeeUserId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeUserId, presenceDate])
+  @@index([employeeUserId, presenceDate])
+}
