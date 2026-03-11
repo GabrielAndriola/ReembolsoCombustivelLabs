@@ -8,3 +8,10 @@ export const getMonthBounds = (month: number, year: number) => {
   const end = new Date(Date.UTC(year, month, 1));
   return { start, end };
 };
+
+export const getOperationalPeriodBounds = (month: number, year: number) => {
+  const start = new Date(Date.UTC(year, month - 2, 20));
+  const end = new Date(Date.UTC(year, month - 1, 31));
+
+  return { start, end };
+};

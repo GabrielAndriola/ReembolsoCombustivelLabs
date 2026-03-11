@@ -321,6 +321,63 @@ export const employeeService = {
     return this.getEmployeeById(companyId, employeeId);
   },
 
+  async deleteEmployee(companyId: string, currentUserId: string, employeeId: string) {
+    if (currentUserId === employeeId) {
+      throw new AppError('Voce nao pode excluir o proprio usuario.', 400);
+    }
+
+    const existingEmployee = await userRepository.findEmployeeById(companyId, employeeId);
+
+    if (!existingEmployee) {
+      throw new AppError('Funcionario nao encontrado.', 404);
+    }
+
+    const addressIds = existingEmployee.employeeAddresses.map((item) => item.address.id);
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.employeeProfile.updateMany({
+        where: {
+          supervisorId: employeeId
+        },
+        data: {
+          supervisorId: null
+        }
+      });
+
+      await transaction.user.delete({
+        where: {
+          id: employeeId
+        }
+      });
+
+      if (addressIds.length > 0) {
+        await transaction.address.deleteMany({
+          where: {
+            id: {
+              in: addressIds
+            },
+            employeeAddresses: {
+              none: {}
+            },
+            companyAddresses: {
+              none: {}
+            }
+          }
+        });
+      }
+    });
+
+    cache.deleteByPrefix(`employee:list:${companyId}`);
+    cache.delete(`employee:profile:${employeeId}`);
+    cache.deleteByPrefix(`report:monthly:${companyId}:`);
+    cache.deleteByPrefix(`presence:list:${employeeId}:`);
+    cache.deleteByPrefix(`presence:summary:${employeeId}:`);
+
+    return {
+      deleted: true
+    };
+  },
+
   async applyRate(companyId: string, payload: {
     year: number;
     month: number;

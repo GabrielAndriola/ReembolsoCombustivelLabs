@@ -109,6 +109,21 @@ export interface MonthlyReportResponse {
   }>;
 }
 
+export interface CompanyPeriodResponse {
+  month: number;
+  year: number;
+  startDay: number;
+  endDay: number;
+  startDate: string;
+  endDate: string;
+  spansPreviousMonth: boolean;
+  isDefault: boolean;
+}
+
+export interface DeleteEmployeeResponse {
+  deleted: boolean;
+}
+
 export interface EmployeeDashboardResponse {
   profile: ProfileResponse;
   presences: PresenceResponse[];
@@ -117,11 +132,18 @@ export interface EmployeeDashboardResponse {
     totalDistanceKm: number;
     totalReimbursement: number;
   };
+  period: CompanyPeriodResponse;
 }
 
 export interface SupervisorOverviewResponse {
   employees: EmployeeResponse[];
   report: MonthlyReportResponse[];
+  period: CompanyPeriodResponse;
+}
+
+export interface EmployeePresencesResponse {
+  presences: PresenceResponse[];
+  period: CompanyPeriodResponse;
 }
 
 export interface RateTargetResponse {
@@ -225,7 +247,7 @@ export const api = {
   },
 
   getMyPresences(month: number, year: number) {
-    return request<PresenceResponse[]>(`/api/me/presences?month=${month}&year=${year}`);
+    return request<EmployeePresencesResponse>(`/api/me/presences?month=${month}&year=${year}`);
   },
 
   getMySummary(month: number, year: number) {
@@ -236,7 +258,7 @@ export const api = {
     }>(`/api/me/summary?month=${month}&year=${year}`);
   },
 
-  createMyPresences(payload: { dates: string[]; observation?: string }) {
+  createMyPresences(payload: { month: number; year: number; dates: string[]; observation?: string }) {
     return request<{ created: number }>('/api/me/presences', {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -269,6 +291,12 @@ export const api = {
     });
   },
 
+  deleteEmployee(id: string) {
+    return request<DeleteEmployeeResponse>(`/api/employees/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   applyRate(payload: {
     year: number;
     month: number;
@@ -295,6 +323,13 @@ export const api = {
 
   getSupervisorOverview(month: number, year: number) {
     return request<SupervisorOverviewResponse>(`/api/reports/overview?month=${month}&year=${year}`);
+  },
+
+  updateCompanyPeriod(payload: { month: number; year: number; startDay: number; endDay: number }) {
+    return request<CompanyPeriodResponse>('/api/reports/period', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
   },
 
   updatePresenceStatus(id: string, status: 'approved' | 'rejected') {

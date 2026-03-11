@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Edit, Eye, Filter } from 'lucide-react';
+import { Plus, Search, Edit, Eye, Filter, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { api, type EmployeeResponse } from '../../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -10,6 +10,16 @@ import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { LoadingState } from '../../components/LoadingState';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '../../components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const EmployeesManagement: React.FC = () => {
@@ -19,21 +29,41 @@ const EmployeesManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [teamFilter, setTeamFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const loadEmployees = async () => {
+    setIsLoading(true);
+    try {
+      setEmployees(await api.getEmployees());
+      setIsLoading(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os funcionarios.');
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadEmployees = async () => {
-      setIsLoading(true);
-      try {
-        setEmployees(await api.getEmployees());
-        setIsLoading(false);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os funcionarios.');
-        setIsLoading(false);
-      }
-    };
-
     loadEmployees();
   }, []);
+
+  const handleDeleteEmployee = async () => {
+    if (!employeeToDelete) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await api.deleteEmployee(employeeToDelete.id);
+      toast.success('Funcionario excluido com sucesso.');
+      setEmployeeToDelete(null);
+      await loadEmployees();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel excluir o funcionario.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const teams = useMemo(
     () => Array.from(new Set(employees.map((employee) => employee.department).filter(Boolean))).sort(),
@@ -197,6 +227,9 @@ const EmployeesManagement: React.FC = () => {
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/supervisor/employees/${employee.id}/edit`)}>
                         <Edit className="w-4 h-4" />
                       </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEmployeeToDelete(employee)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -205,6 +238,25 @@ const EmployeesManagement: React.FC = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={Boolean(employeeToDelete)} onOpenChange={(open) => !open && setEmployeeToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir funcionario</AlertDialogTitle>
+            <AlertDialogDescription>
+              {employeeToDelete
+                ? `Essa acao vai excluir ${employeeToDelete.name} e os registros relacionados.`
+                : 'Essa acao vai excluir o funcionario e os registros relacionados.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEmployee} disabled={isDeleting}>
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

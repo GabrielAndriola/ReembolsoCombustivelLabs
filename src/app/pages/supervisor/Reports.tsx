@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, FileText, Filter, TrendingUp, Users, Calendar, DollarSign, X } from 'lucide-react';
-import { api, type EmployeeResponse, type MonthlyReportResponse } from '../../lib/api';
+import { Check, FileSpreadsheet, Filter, TrendingUp, Users, Calendar, DollarSign, X } from 'lucide-react';
+import { api, type CompanyPeriodResponse, type EmployeeResponse, type MonthlyReportResponse } from '../../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -9,7 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingState } from '../../components/LoadingState';
+import { formatPeriodLabel } from '../../lib/period';
 import { toast } from 'sonner';
+
+const DEFAULT_UNIT = '1';
 
 const Reports: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState('3');
@@ -17,6 +20,7 @@ const Reports: React.FC = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [report, setReport] = useState<MonthlyReportResponse[]>([]);
+  const [period, setPeriod] = useState<CompanyPeriodResponse | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,6 +30,7 @@ const Reports: React.FC = () => {
       const response = await api.getSupervisorOverview(Number(selectedMonth), Number(selectedYear));
       setEmployees(response.employees);
       setReport(response.report);
+      setPeriod(response.period);
       setIsLoading(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os relatorios.');
@@ -41,6 +46,33 @@ const Reports: React.FC = () => {
     () => report.filter((item) => selectedEmployee === 'all' || item.employeeId === selectedEmployee),
     [report, selectedEmployee]
   );
+
+  const operationalRows = useMemo(() => {
+    const reportMap = new Map(filteredReport.map((item) => [item.employeeId, item]));
+    const sourceEmployees = (
+      selectedEmployee === 'all' ? employees : employees.filter((employee) => employee.id === selectedEmployee)
+    ).filter((employee) => employee.role !== 'admin');
+
+    return sourceEmployees.map((employee) => {
+      const employeeReport = reportMap.get(employee.id);
+      const pending = employeeReport?.records.filter((record) => record.status === 'pending').length ?? 0;
+      const quantityDays = employeeReport?.totalPresenceDays ?? 0;
+      const totalKm = employeeReport?.totalDistanceKm ?? 0;
+      const totalDailyKm =
+        employee.totalDailyDistanceKm ??
+        (quantityDays > 0 ? Number((totalKm / quantityDays).toFixed(2)) : 0);
+
+      return {
+        unit: employee.department || DEFAULT_UNIT,
+        code: employee.employeeCode || '-',
+        collaborator: employee.name,
+        totalDailyKm,
+        quantityDays,
+        totalReimbursement: employeeReport?.totalReimbursement ?? 0,
+        observation: pending > 0 ? `${pending} pendente(s)` : ''
+      };
+    });
+  }, [employees, filteredReport, selectedEmployee]);
 
   const detailedRows = filteredReport.flatMap((item) =>
     item.records.map((record) => ({
@@ -59,11 +91,144 @@ const Reports: React.FC = () => {
   const totalDays = filteredReport.reduce((sum, item) => sum + item.totalPresenceDays, 0);
   const totalKm = filteredReport.reduce((sum, item) => sum + item.totalDistanceKm, 0);
   const totalValue = filteredReport.reduce((sum, item) => sum + item.totalReimbursement, 0);
-  const uniqueEmployees = filteredReport.length;
+  const uniqueEmployees = operationalRows.length;
   const pendingRecordIds = detailedRows.filter((row) => row.status === 'pending').map((row) => row.id);
 
-  const handleExport = (format: 'pdf' | 'excel') => {
-    toast.info(`Exportacao ${format.toUpperCase()} ainda nao foi implementada.`);
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+
+  const formatDecimal = (value: number) =>
+    new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 2
+    }).format(value);
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCsv = () => {
+    const headers = ['Unidade', 'Codigo', 'Colaborador', 'TOTAL KM / DIA', 'QNTD DIAS NO MES', 'TOTAL R$', 'Observacao'];
+    const rows = operationalRows.map((row) => [
+      row.unit,
+      row.code,
+      row.collaborator,
+      formatDecimal(row.totalDailyKm),
+      String(row.quantityDays),
+      formatCurrency(row.totalReimbursement),
+      row.observation
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((line) => line.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(';'))
+      .join('\n');
+
+    const blob = new Blob([`\uFEFF${csvContent}`], {
+      type: 'text/csv;charset=utf-8;'
+    });
+    downloadBlob(blob, `relatorio-operacional-${selectedYear}-${selectedMonth}.csv`);
+
+    toast.success('Planilha exportada com sucesso.');
+  };
+
+  const exportFormattedExcel = async () => {
+    try {
+      const ExcelJS = (await import('exceljs')).default;
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Relatorio Operacional', {
+        views: [{ state: 'frozen', ySplit: 1 }]
+      });
+
+      worksheet.columns = [
+        { header: 'Unidade', key: 'unit', width: 14 },
+        { header: 'Codigo', key: 'code', width: 14 },
+        { header: 'Colaborador', key: 'collaborator', width: 30 },
+        { header: 'TOTAL KM / DIA', key: 'totalDailyKm', width: 18 },
+        { header: 'QNTD DIAS NO MES', key: 'quantityDays', width: 18 },
+        { header: 'TOTAL R$', key: 'totalReimbursement', width: 18 },
+        { header: 'Observacao', key: 'observation', width: 28 }
+      ];
+
+      worksheet.addRows(
+        operationalRows.map((row) => ({
+          unit: row.unit,
+          code: row.code,
+          collaborator: row.collaborator,
+          totalDailyKm: row.totalDailyKm,
+          quantityDays: row.quantityDays,
+          totalReimbursement: row.totalReimbursement,
+          observation: row.observation
+        }))
+      );
+
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FF1F4E78' } };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF4E7B2' }
+      };
+
+      worksheet.autoFilter = {
+        from: 'A1',
+        to: 'G1'
+      };
+
+      worksheet.eachRow((row, rowNumber) => {
+        row.height = 22;
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FF808080' } },
+            left: { style: 'thin', color: { argb: 'FF808080' } },
+            bottom: { style: 'thin', color: { argb: 'FF808080' } },
+            right: { style: 'thin', color: { argb: 'FF808080' } }
+          };
+
+          if (rowNumber > 1) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: rowNumber % 2 === 0 ? 'FFF9EFC9' : 'FFF4E7B2' }
+            };
+          }
+        });
+      });
+
+      worksheet.getColumn('D').numFmt = '#,##0.00';
+      worksheet.getColumn('E').numFmt = '0';
+      worksheet.getColumn('F').numFmt = '"R$" #,##0.00';
+
+      ['D', 'E', 'F'].forEach((columnKey) => {
+        worksheet.getColumn(columnKey).alignment = { horizontal: 'right', vertical: 'middle' };
+      });
+
+      ['A', 'B', 'C', 'G'].forEach((columnKey) => {
+        worksheet.getColumn(columnKey).alignment = { horizontal: 'left', vertical: 'middle' };
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      downloadBlob(
+        new Blob([buffer], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }),
+        `relatorio-operacional-${selectedYear}-${selectedMonth}.xlsx`
+      );
+
+      toast.success('Excel formatado exportado com sucesso.');
+    } catch (error) {
+      toast.error('Nao foi possivel gerar o arquivo Excel formatado.');
+    }
   };
 
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
@@ -109,6 +274,11 @@ const Reports: React.FC = () => {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Relatorios</h1>
           <p className="text-muted-foreground">Analise detalhada de reembolsos e presencas</p>
+          {period && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Periodo considerado: {formatPeriodLabel(period)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -172,12 +342,12 @@ const Reports: React.FC = () => {
                 <Check className="w-4 h-4" />
                 Aprovar Pendentes
               </Button>
-              <Button variant="outline" onClick={() => handleExport('pdf')} className="flex-1 gap-2">
-                <FileText className="w-4 h-4" />
-                PDF
+              <Button variant="outline" onClick={exportCsv} className="flex-1 gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                CSV
               </Button>
-              <Button variant="outline" onClick={() => handleExport('excel')} className="flex-1 gap-2">
-                <FileText className="w-4 h-4" />
+              <Button variant="outline" onClick={exportFormattedExcel} className="flex-1 gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
                 Excel
               </Button>
             </div>
@@ -239,51 +409,43 @@ const Reports: React.FC = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="consolidated" className="w-full">
+      <Tabs defaultValue="operational" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="consolidated">Relatorio Consolidado</TabsTrigger>
+          <TabsTrigger value="operational">Visao Operacional</TabsTrigger>
           <TabsTrigger value="detailed">Relatorio Detalhado</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="consolidated">
+        <TabsContent value="operational">
           <Card>
             <CardHeader>
-              <CardTitle>Relatorio Consolidado por Funcionario</CardTitle>
-              <CardDescription>Resumo de reembolsos agrupado por colaborador</CardDescription>
+              <CardTitle>Visao Padrao para Supervisor</CardTitle>
+              <CardDescription>Resumo mensal no formato operacional solicitado pela supervisao</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Funcionario</TableHead>
-                    <TableHead>Equipe</TableHead>
-                    <TableHead className="text-right">Dias</TableHead>
-                    <TableHead className="text-right">KM Total</TableHead>
-                    <TableHead className="text-right">Valor Total</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead>Unidade</TableHead>
+                    <TableHead>Codigo</TableHead>
+                    <TableHead>Colaborador</TableHead>
+                    <TableHead className="text-right">TOTAL KM / DIA</TableHead>
+                    <TableHead className="text-right">QNTD DIAS NO MES</TableHead>
+                    <TableHead className="text-right">TOTAL R$</TableHead>
+                    <TableHead>Observacao</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredReport.map((item) => {
-                    const approved = item.records.filter((record) => record.status === 'approved').length;
-                    const pending = item.records.filter((record) => record.status === 'pending').length;
-
-                    return (
-                      <TableRow key={item.employeeId}>
-                        <TableCell className="font-medium">{item.employeeName}</TableCell>
-                        <TableCell>{item.department}</TableCell>
-                        <TableCell className="text-right">{item.totalPresenceDays}</TableCell>
-                        <TableCell className="text-right">{item.totalDistanceKm.toFixed(2)} km</TableCell>
-                        <TableCell className="text-right font-semibold">R$ {item.totalReimbursement.toFixed(2)}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex gap-1 justify-center">
-                            {approved > 0 && <Badge variant="default" className="text-xs">{approved} aprovados</Badge>}
-                            {pending > 0 && <Badge variant="secondary" className="text-xs">{pending} pendentes</Badge>}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {operationalRows.map((row) => (
+                    <TableRow key={`${row.code}-${row.collaborator}`}>
+                      <TableCell>{row.unit}</TableCell>
+                      <TableCell className="font-mono text-sm">{row.code}</TableCell>
+                      <TableCell className="font-medium">{row.collaborator}</TableCell>
+                      <TableCell className="text-right">{formatDecimal(row.totalDailyKm)}</TableCell>
+                      <TableCell className="text-right">{row.quantityDays}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(row.totalReimbursement)}</TableCell>
+                      <TableCell>{row.observation}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>

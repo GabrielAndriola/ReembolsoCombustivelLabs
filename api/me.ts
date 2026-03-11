@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticate, requireRole, type AuthenticatedRequest } from '../middleware/auth';
 import { employeeService } from '../services/employeeService';
 import { presenceService } from '../services/presenceService';
+import { companyPeriodService } from '../services/companyPeriodService';
 
 const router = Router();
 
@@ -12,6 +13,8 @@ const periodSchema = z.object({
 });
 
 const createPresencesSchema = z.object({
+  month: z.coerce.number().min(1).max(12),
+  year: z.coerce.number().min(2024).max(2100),
   dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1),
   observation: z.string().max(300).optional().or(z.literal(''))
 });
@@ -30,28 +33,18 @@ router.get('/profile', async (req: AuthenticatedRequest, res, next) => {
 router.get('/dashboard', async (req: AuthenticatedRequest, res, next) => {
   try {
     const query = periodSchema.parse(req.query);
-    const [profile, presences] = await Promise.all([
+    const [profile, presences, summary, period] = await Promise.all([
       employeeService.getProfile(req.auth!.userId),
-      presenceService.list(req.auth!.userId, query.month, query.year)
+      presenceService.list(req.auth!.userId, query.month, query.year, req.auth!.companyId),
+      presenceService.summary(req.auth!.userId, query.month, query.year, req.auth!.companyId),
+      companyPeriodService.getPeriod(req.auth!.companyId, query.month, query.year)
     ]);
-
-    const summary = presences.reduce(
-      (accumulator, presence) => ({
-        totalPresenceDays: accumulator.totalPresenceDays + 1,
-        totalDistanceKm: accumulator.totalDistanceKm + presence.distanceRoundTripKm,
-        totalReimbursement: accumulator.totalReimbursement + presence.reimbursementAmount
-      }),
-      {
-        totalPresenceDays: 0,
-        totalDistanceKm: 0,
-        totalReimbursement: 0
-      }
-    );
 
     res.json({
       profile,
       presences,
-      summary
+      summary,
+      period
     });
   } catch (error) {
     next(error);
@@ -61,8 +54,11 @@ router.get('/dashboard', async (req: AuthenticatedRequest, res, next) => {
 router.get('/presences', async (req: AuthenticatedRequest, res, next) => {
   try {
     const query = periodSchema.parse(req.query);
-    const result = await presenceService.list(req.auth!.userId, query.month, query.year);
-    res.json(result);
+    const [presences, period] = await Promise.all([
+      presenceService.list(req.auth!.userId, query.month, query.year, req.auth!.companyId),
+      companyPeriodService.getPeriod(req.auth!.companyId, query.month, query.year)
+    ]);
+    res.json({ presences, period });
   } catch (error) {
     next(error);
   }
@@ -74,6 +70,8 @@ router.post('/presences', async (req: AuthenticatedRequest, res, next) => {
     const result = await presenceService.create(
       req.auth!.userId,
       req.auth!.companyId,
+      payload.month,
+      payload.year,
       payload.dates,
       payload.observation || undefined
     );
@@ -86,7 +84,7 @@ router.post('/presences', async (req: AuthenticatedRequest, res, next) => {
 router.get('/summary', async (req: AuthenticatedRequest, res, next) => {
   try {
     const query = periodSchema.parse(req.query);
-    const result = await presenceService.summary(req.auth!.userId, query.month, query.year);
+    const result = await presenceService.summary(req.auth!.userId, query.month, query.year, req.auth!.companyId);
     res.json(result);
   } catch (error) {
     next(error);

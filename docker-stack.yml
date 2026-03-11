@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    networks:
+      - rede_company
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+  backend:
+    image: docker.crisdulabs.com.br/meureembolso/backend:latest
+    networks:
+      - rede_company
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=${PORT:-3000}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - PRISMA_DB_PUSH=${PRISMA_DB_PUSH:-false}
+      - PRISMA_DB_SEED=${PRISMA_DB_SEED:-false}
+      - PRISMA_SEED_MODE=${PRISMA_SEED_MODE:-minimal}
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+  frontend:
+    image: docker.crisdulabs.com.br/meureembolso/frontend:latest
+    networks:
+      - rede_company
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=rede_company
+        - traefik.http.routers.reembolso-frontend.rule=Host(`meureembolso.crisdulabs.com.br`)
+        - traefik.http.routers.reembolso-frontend.entrypoints=websecure
+        - traefik.http.routers.reembolso-frontend.priority=1
+        - traefik.http.routers.reembolso-frontend.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.reembolso-frontend.service=reembolso-frontend
+        - traefik.http.services.reembolso-frontend.loadbalancer.server.port=80
+
+networks:
+  rede_company:
+    external: true
+    name: rede_company
+
+volumes:
+  postgres_data:

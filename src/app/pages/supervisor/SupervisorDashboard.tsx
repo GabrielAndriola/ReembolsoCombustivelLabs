@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Users, Calendar, MapPin, DollarSign, AlertCircle, Filter } from 'lucide-react';
-import { api, type EmployeeResponse, type MonthlyReportResponse } from '../../lib/api';
+import { useNavigate } from 'react-router';
+import { api, type CompanyPeriodResponse, type EmployeeResponse, type MonthlyReportResponse } from '../../lib/api';
+import { formatPeriodLabel } from '../../lib/period';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { LoadingState } from '../../components/LoadingState';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
 
 const SupervisorDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState('3');
   const [selectedYear, setSelectedYear] = useState('2026');
   const [employees, setEmployees] = useState<EmployeeResponse[]>([]);
   const [report, setReport] = useState<MonthlyReportResponse[]>([]);
+  const [period, setPeriod] = useState<CompanyPeriodResponse | null>(null);
+  const [periodStartDay, setPeriodStartDay] = useState('1');
+  const [periodEndDay, setPeriodEndDay] = useState('30');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingPeriod, setIsSavingPeriod] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -21,6 +30,9 @@ const SupervisorDashboard: React.FC = () => {
         const response = await api.getSupervisorOverview(Number(selectedMonth), Number(selectedYear));
         setEmployees(response.employees);
         setReport(response.report);
+        setPeriod(response.period);
+        setPeriodStartDay(String(response.period.startDay));
+        setPeriodEndDay(String(response.period.endDay));
         setIsLoading(false);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar o dashboard gerencial.');
@@ -75,6 +87,41 @@ const SupervisorDashboard: React.FC = () => {
     .sort((a, b) => b.totalReimbursement - a.totalReimbursement)
     .slice(0, 5);
 
+  const handleSavePeriod = async () => {
+    const startDay = Number(periodStartDay);
+    const endDay = Number(periodEndDay);
+
+    if (!Number.isInteger(startDay) || startDay < 1 || startDay > 31 || !Number.isInteger(endDay) || endDay < 1 || endDay > 31) {
+      toast.error('Informe dias validos entre 1 e 31.');
+      return;
+    }
+
+    setIsSavingPeriod(true);
+
+    try {
+      const updatedPeriod = await api.updateCompanyPeriod({
+        month: Number(selectedMonth),
+        year: Number(selectedYear),
+        startDay,
+        endDay
+      });
+
+      setPeriod(updatedPeriod);
+      toast.success('Periodo do mes salvo com sucesso.');
+
+      const response = await api.getSupervisorOverview(Number(selectedMonth), Number(selectedYear));
+      setEmployees(response.employees);
+      setReport(response.report);
+      setPeriod(response.period);
+      setPeriodStartDay(String(response.period.startDay));
+      setPeriodEndDay(String(response.period.endDay));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel salvar o periodo.');
+    } finally {
+      setIsSavingPeriod(false);
+    }
+  };
+
   if (isLoading && employees.length === 0 && report.length === 0) {
     return <LoadingState message="Carregando dashboard gerencial..." />;
   }
@@ -92,7 +139,7 @@ const SupervisorDashboard: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <Filter className="w-5 h-5 text-muted-foreground hidden sm:block" />
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 w-full">
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger>
                   <SelectValue />
@@ -124,7 +171,39 @@ const SupervisorDashboard: React.FC = () => {
                   <SelectItem value="2027">2027</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Input
+                type="number"
+                min={1}
+                max={31}
+                value={periodStartDay}
+                onChange={(event) => setPeriodStartDay(event.target.value)}
+                placeholder="Dia inicial"
+              />
+
+              <Input
+                type="number"
+                min={1}
+                max={31}
+                value={periodEndDay}
+                onChange={(event) => setPeriodEndDay(event.target.value)}
+                placeholder="Dia final"
+              />
+
+              <Button onClick={handleSavePeriod} disabled={isSavingPeriod}>
+                {isSavingPeriod ? 'Salvando...' : 'Salvar periodo'}
+              </Button>
             </div>
+          </div>
+          <div className="mt-4 text-sm text-muted-foreground">
+            {period ? (
+              <span>
+                Periodo configurado: {formatPeriodLabel(period)}
+                {period.isDefault ? ' (padrao 1 a 30)' : ''}
+              </span>
+            ) : (
+              <span>Periodo configurado: padrao de 1 a 30.</span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -152,7 +231,7 @@ const SupervisorDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold text-foreground">{totalDays}</div>
-            <p className="text-xs text-muted-foreground mt-1">Dias presenciais no mes</p>
+            <p className="text-xs text-muted-foreground mt-1">Dias presenciais no periodo</p>
           </CardContent>
         </Card>
 
@@ -184,7 +263,10 @@ const SupervisorDashboard: React.FC = () => {
       </div>
 
       {pendingApprovals > 0 && (
-        <Card className="border-l-4 border-l-chart-4 bg-chart-4/5">
+        <Card
+          className="border-l-4 border-l-chart-4 bg-chart-4/5 cursor-pointer transition-shadow hover:shadow-md"
+          onClick={() => navigate('/supervisor/reports')}
+        >
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-chart-4" />
@@ -195,6 +277,7 @@ const SupervisorDashboard: React.FC = () => {
             <p className="text-sm text-foreground">
               Existem <strong>{pendingApprovals} registros</strong> aguardando sua aprovacao.
             </p>
+            <p className="text-xs text-muted-foreground mt-2">Clique para abrir a tela de relatorios.</p>
           </CardContent>
         </Card>
       )}

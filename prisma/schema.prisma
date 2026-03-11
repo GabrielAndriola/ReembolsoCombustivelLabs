@@ -28,6 +28,21 @@ model Company {
   updatedAt        DateTime         @updatedAt
   users            User[]
   companyAddresses CompanyAddress[]
+  periodConfigs    CompanyPeriod[]
+}
+
+model CompanyPeriod {
+  id        String   @id @default(cuid())
+  companyId String
+  year      Int
+  month     Int
+  startDay  Int
+  endDay    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, year, month])
 }
 
 model User {

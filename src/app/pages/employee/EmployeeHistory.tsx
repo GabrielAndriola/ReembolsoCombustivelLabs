@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Calendar, Download, FileText, Filter, MapPin, DollarSign } from 'lucide-react';
-import { api, type PresenceResponse } from '../../lib/api';
+import { api, type CompanyPeriodResponse, type PresenceResponse } from '../../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingState } from '../../components/LoadingState';
+import { formatPeriodLabel } from '../../lib/period';
 import { toast } from 'sonner';
 
 const EmployeeHistory: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState('3');
   const [selectedYear, setSelectedYear] = useState('2026');
   const [attendances, setAttendances] = useState<PresenceResponse[]>([]);
+  const [period, setPeriod] = useState<CompanyPeriodResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [summary, setSummary] = useState({
     totalPresenceDays: 0,
@@ -31,7 +33,8 @@ const EmployeeHistory: React.FC = () => {
           api.getMySummary(month, year)
         ]);
 
-        setAttendances(presencesResponse);
+        setAttendances(presencesResponse.presences);
+        setPeriod(presencesResponse.period);
         setSummary(summaryResponse);
         setIsLoading(false);
       } catch (error) {
@@ -77,8 +80,13 @@ const EmployeeHistory: React.FC = () => {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Histórico de Presenças</h1>
           <p className="text-muted-foreground">
-            Visualize todos os seus registros de presença.
+            Visualize todos os seus registros de presenca.
           </p>
+          {period && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Periodo considerado: {formatPeriodLabel(period)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -213,7 +221,7 @@ const EmployeeHistory: React.FC = () => {
         <CardHeader>
           <CardTitle>Detalhamento de Registros</CardTitle>
           <CardDescription>
-            Lista completa de presenças do período selecionado
+            Lista completa de presencas do periodo selecionado
           </CardDescription>
         </CardHeader>
         <CardContent>

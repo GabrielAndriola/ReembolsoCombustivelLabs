@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar as CalendarIcon, Plus, MapPin, DollarSign, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api, type PresenceResponse, type ProfileResponse } from '../../lib/api';
+import { countBusinessDaysElapsed, countRegisteredDaysElapsed, formatPeriodLabel } from '../../lib/period';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import RegisterAttendanceModal from '../../components/RegisterAttendanceModal';
@@ -15,6 +16,7 @@ const EmployeeDashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [displayDate, setDisplayDate] = useState(new Date());
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [period, setPeriod] = useState<{ startDate: string; endDate: string } | null>(null);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [monthlyAttendances, setMonthlyAttendances] = useState<PresenceResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +36,7 @@ const EmployeeDashboard: React.FC = () => {
       setProfile(response.profile);
       setMonthlyAttendances(response.presences);
       setSummary(response.summary);
+      setPeriod(response.period);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível carregar o dashboard.');
     }
@@ -52,6 +55,9 @@ const EmployeeDashboard: React.FC = () => {
   )[0];
   const currentRate = profile?.monthlyRates.find((rate) => rate.year === currentYear && rate.month === currentMonth);
   const totalDailyDistanceKm = profile?.totalDailyDistanceKm ?? monthlyAttendances[0]?.distanceRoundTripKm ?? 0;
+  const elapsedBusinessDays = period ? countBusinessDaysElapsed(period) : 0;
+  const registeredElapsedDays = period ? countRegisteredDaysElapsed(period, monthlyAttendances) : 0;
+  const missingElapsedDays = Math.max(elapsedBusinessDays - registeredElapsedDays, 0);
 
   const handleToggleDate = (date: string) => {
     setSelectedDates((currentDates) =>
@@ -69,6 +75,8 @@ const EmployeeDashboard: React.FC = () => {
     observation: string;
   }) => {
     await api.createMyPresences({
+      month: currentMonth,
+      year: currentYear,
       dates,
       observation
     });
@@ -86,6 +94,7 @@ const EmployeeDashboard: React.FC = () => {
     month: 'long',
     year: 'numeric'
   }).format(displayDate);
+  const periodLabel = period ? formatPeriodLabel(period) : monthLabel;
 
   const getStatusBadge = (status: PresenceResponse['status']) => (
     <StatusBadge status={status} />
@@ -120,7 +129,10 @@ const EmployeeDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold text-foreground">{summary.totalPresenceDays}</div>
-            <p className="text-xs text-muted-foreground mt-1">em {monthLabel}</p>
+            <p className="text-xs text-muted-foreground mt-1">em {periodLabel}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {registeredElapsedDays} com presencial / {missingElapsedDays} sem presencial ate hoje
+            </p>
           </CardContent>
         </Card>
 
@@ -192,7 +204,7 @@ const EmployeeDashboard: React.FC = () => {
                       : `${selectedDates.length} dia(s) pronto(s) para registrar`}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Finais de semana, datas futuras e dias já lançados ficam bloqueados.
+                    Periodo aberto do dia 20 do mes anterior ate o dia 30 do mes atual. Finais de semana, datas futuras e dias ja lancados ficam bloqueados.
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -212,8 +224,8 @@ const EmployeeDashboard: React.FC = () => {
 
             <AttendanceCalendar
               attendanceDates={attendanceDates}
-              month={currentMonth}
-              year={currentYear}
+              periodStart={period?.startDate ?? `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`}
+              periodEnd={period?.endDate ?? `${currentYear}-${String(currentMonth).padStart(2, '0')}-30`}
               selectedDates={selectedDates}
               onToggleDate={handleToggleDate}
               onPreviousMonth={() => changeMonth(-1)}
@@ -231,7 +243,7 @@ const EmployeeDashboard: React.FC = () => {
             {monthlyAttendances.length === 0 ? (
               <div className="text-center py-8">
                 <CalendarIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">Nenhum registro neste mês</p>
+                <p className="text-muted-foreground">Nenhum registro no periodo selecionado</p>
               </div>
             ) : (
               <div className="space-y-3">

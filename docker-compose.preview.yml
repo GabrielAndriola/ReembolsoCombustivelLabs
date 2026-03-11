@@ -1,0 +1,38 @@
+name: meureembolso
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reembolso_combustivel}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_preview_data:/var/lib/postgresql/data
+
+  backend:
+    image: docker.crisdulabs.com.br/meureembolso/backend:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/reembolso_combustivel?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgres@db:5432/reembolso_combustivel?schema=public}
+      JWT_SECRET: ${JWT_SECRET:-changeme}
+      PORT: ${PORT:-3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      PRISMA_DB_PUSH: ${PRISMA_DB_PUSH:-true}
+      PRISMA_DB_SEED: ${PRISMA_DB_SEED:-true}
+      PRISMA_SEED_MODE: ${PRISMA_SEED_MODE:-full}
+
+  frontend:
+    image: docker.crisdulabs.com.br/meureembolso/frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_preview_data:

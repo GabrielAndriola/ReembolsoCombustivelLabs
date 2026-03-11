@@ -127,4 +127,13 @@ router.put('/:id', async (req: AuthenticatedRequest, res, next) => {
   }
 });
 
+router.delete('/:id', async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const result = await employeeService.deleteEmployee(req.auth!.companyId, req.auth!.userId, req.params.id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

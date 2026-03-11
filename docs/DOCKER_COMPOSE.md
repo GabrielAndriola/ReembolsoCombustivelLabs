@@ -51,7 +51,7 @@ DATABASE_URL="postgresql://postgres.PROJECT_REF:[YOUR-PASSWORD]@aws-0-us-west-2.
 DIRECT_URL="postgresql://postgres:[YOUR-PASSWORD]@db.PROJECT_REF.supabase.co:5432/postgres?sslmode=require"
 JWT_SECRET="troque-por-um-segredo-forte"
 PORT="3001"
-CORS_ORIGIN="https://SEU-PROJETO.pages.dev,https://app.seudominio.com"
+CORS_ORIGIN="https://reembolsocombustivellabs.pages.dev,https://app.seudominio.com"
 VITE_API_BASE_URL=""
 PRISMA_DB_PUSH="false"
 ```
@@ -182,7 +182,7 @@ Nao use:
 No backend Docker, configure `CORS_ORIGIN` com o dominio real do frontend:
 
 ```env
-CORS_ORIGIN="https://SEU-PROJETO.pages.dev,https://app.seudominio.com"
+CORS_ORIGIN="https://reembolsocombustivellabs.pages.dev,https://app.seudominio.com"
 ```
 
 ## 9. Parar o ambiente

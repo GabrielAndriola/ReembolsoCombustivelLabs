@@ -78,10 +78,7 @@ export const presenceRepository = {
     });
   },
 
-  monthlyReport(companyId: string, month: number, year: number) {
-    const start = new Date(Date.UTC(year, month - 1, 1));
-    const end = new Date(Date.UTC(year, month, 1));
-
+  monthlyReport(companyId: string, start: Date, end: Date) {
     return prisma.presenceRecord.findMany({
       where: {
         employee: {

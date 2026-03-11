@@ -74,8 +74,8 @@ async function main() {
   const supervisor = await prisma.user.create({
     data: {
       companyId: company.id,
-      name: 'Carlos Silva',
-      email: 'supervisor@crisdu.com.br',
+      name: 'Willian Crisdu',
+      email: 'willian@crisdu.com.br',
       passwordHash,
       role: UserRole.SUPERVISOR,
       employeeProfile: {

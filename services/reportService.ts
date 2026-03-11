@@ -2,6 +2,7 @@ import { presenceRepository } from '../repositories/presenceRepository';
 import { presenceService } from './presenceService';
 import { cache } from '../utils/cache';
 import { serializeStatus, toNumber } from '../utils/serializers';
+import { companyPeriodService } from './companyPeriodService';
 
 const READ_TTL_MS = 30_000;
 
@@ -14,7 +15,8 @@ export const reportService = {
       return cached;
     }
 
-    const records = await presenceRepository.monthlyReport(companyId, month, year);
+    const { start, end } = await companyPeriodService.getBounds(companyId, month, year);
+    const records = await presenceRepository.monthlyReport(companyId, start, end);
 
     const grouped = records.reduce<Record<string, any>>((accumulator, record) => {
       const key = record.employee.id;

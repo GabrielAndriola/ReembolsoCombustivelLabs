@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate, requireRole, type AuthenticatedRequest } from '../middleware/auth';
 import { employeeService } from '../services/employeeService';
+import { companyPeriodService } from '../services/companyPeriodService';
 import { reportService } from '../services/reportService';
 
 const router = Router();
@@ -20,6 +21,13 @@ const bulkUpdatePresenceStatusSchema = z.object({
   status: z.enum(['approved', 'rejected'])
 });
 
+const updatePeriodSchema = z.object({
+  month: z.coerce.number().min(1).max(12),
+  year: z.coerce.number().min(2024).max(2100),
+  startDay: z.coerce.number().min(1).max(31),
+  endDay: z.coerce.number().min(1).max(31)
+});
+
 router.use(authenticate, requireRole('supervisor', 'admin'));
 
 router.get('/monthly', async (req: AuthenticatedRequest, res, next) => {
@@ -35,15 +43,33 @@ router.get('/monthly', async (req: AuthenticatedRequest, res, next) => {
 router.get('/overview', async (req: AuthenticatedRequest, res, next) => {
   try {
     const query = reportSchema.parse(req.query);
-    const [employees, report] = await Promise.all([
+    const [employees, report, period] = await Promise.all([
       employeeService.listEmployees(req.auth!.companyId),
-      reportService.monthly(req.auth!.companyId, query.month, query.year)
+      reportService.monthly(req.auth!.companyId, query.month, query.year),
+      companyPeriodService.getPeriod(req.auth!.companyId, query.month, query.year)
     ]);
 
     res.json({
       employees,
-      report
+      report,
+      period
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/period', async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const payload = updatePeriodSchema.parse(req.body);
+    const result = await companyPeriodService.updatePeriod(
+      req.auth!.companyId,
+      payload.month,
+      payload.year,
+      payload.startDay,
+      payload.endDay
+    );
+    res.json(result);
   } catch (error) {
     next(error);
   }

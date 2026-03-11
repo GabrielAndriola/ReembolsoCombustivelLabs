@@ -6,6 +6,7 @@
 - Setup local: [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
 - Setup com Docker Compose: [docs/DOCKER_COMPOSE.md](docs/DOCKER_COMPOSE.md)
 - Deploy com Docker em servidor: [docs/DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md)
+- Deploy com Swarm e Traefik: [docs/DEPLOY_SWARM_TRAEFIK.md](docs/DEPLOY_SWARM_TRAEFIK.md)
 - Deploy do backend em Linux: [docs/DEPLOY_BACKEND_LINUX.md](docs/DEPLOY_BACKEND_LINUX.md)
 - Deploy interno em Windows: [docs/DEPLOY_WINDOWS.md](docs/DEPLOY_WINDOWS.md)
 - Deploy interno em Linux: [docs/DEPLOY_LINUX.md](docs/DEPLOY_LINUX.md)
@@ -101,6 +102,20 @@ Validacoes:
 Documentacao completa:
 
 - [docs/DOCKER_COMPOSE.md](docs/DOCKER_COMPOSE.md)
+
+## Deploy final na empresa
+
+O desenho final definido para producao ficou assim:
+
+- frontend em imagem Docker
+- backend em imagem Docker
+- PostgreSQL em container Docker
+- Traefik publicando `https://meureembolso.crisdulabs.com.br`
+- Cloudflare apenas no DNS
+
+Documentacao operacional:
+
+- [docs/DEPLOY_SWARM_TRAEFIK.md](docs/DEPLOY_SWARM_TRAEFIK.md)
 
 ## Credenciais de demonstração
 

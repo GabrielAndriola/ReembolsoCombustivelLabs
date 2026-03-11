@@ -9,5 +9,10 @@ if [ "${PRISMA_DB_PUSH:-false}" = "true" ]; then
   npm run db:push
 fi
 
+if [ "${PRISMA_DB_SEED:-false}" = "true" ]; then
+  echo "Seeding database..."
+  npm run db:seed
+fi
+
 echo "Starting API..."
 exec npm run start:api

@@ -5,35 +5,49 @@ import { cache } from '../utils/cache';
 import { getMonthBounds, toDateOnly } from '../utils/date';
 import { serializeStatus, toNumber } from '../utils/serializers';
 import { userRepository } from '../repositories/userRepository';
+import { companyPeriodService } from './companyPeriodService';
 
 const READ_TTL_MS = 30_000;
 
+const serializePresences = (presences: Awaited<ReturnType<typeof presenceRepository.findMany>>) => presences.map((presence) => ({
+  id: presence.id,
+  presenceDate: presence.presenceDate.toISOString().slice(0, 10),
+  observation: presence.observation,
+  status: serializeStatus(presence.status),
+  distanceOneWayKm: toNumber(presence.distanceOneWayKm),
+  distanceRoundTripKm: toNumber(presence.distanceRoundTripKm),
+  reimbursementPerKmApplied: toNumber(presence.reimbursementPerKmApplied),
+  reimbursementAmount: toNumber(presence.reimbursementAmount),
+  calculatedAt: presence.calculatedAt.toISOString()
+}));
+
 export const presenceService = {
-  async list(employeeUserId: string, month: number, year: number) {
-    const cacheKey = `presence:list:${employeeUserId}:${year}:${month}`;
+  async list(employeeUserId: string, month: number, year: number, companyId?: string) {
+    const cacheKey = companyId
+      ? `presence:list:${employeeUserId}:${year}:${month}:period`
+      : `presence:list:${employeeUserId}:${year}:${month}`;
     const cached = cache.get<any[]>(cacheKey);
 
     if (cached) {
       return cached;
     }
 
-    const { start, end } = getMonthBounds(month, year);
+    const { start, end } = companyId
+      ? await companyPeriodService.getBounds(companyId, month, year)
+      : getMonthBounds(month, year);
     const presences = await presenceRepository.findMany(employeeUserId, start, end);
 
-    return cache.set(cacheKey, presences.map((presence) => ({
-      id: presence.id,
-      presenceDate: presence.presenceDate.toISOString().slice(0, 10),
-      observation: presence.observation,
-      status: serializeStatus(presence.status),
-      distanceOneWayKm: toNumber(presence.distanceOneWayKm),
-      distanceRoundTripKm: toNumber(presence.distanceRoundTripKm),
-      reimbursementPerKmApplied: toNumber(presence.reimbursementPerKmApplied),
-      reimbursementAmount: toNumber(presence.reimbursementAmount),
-      calculatedAt: presence.calculatedAt.toISOString()
-    })), READ_TTL_MS);
+    return cache.set(cacheKey, serializePresences(presences), READ_TTL_MS);
   },
 
-  async create(employeeUserId: string, _companyId: string, dates: string[], observation?: string) {
+  async create(
+    employeeUserId: string,
+    companyId: string,
+    month: number,
+    year: number,
+    dates: string[],
+    observation?: string
+  ) {
     const employee = await userRepository.findById(employeeUserId);
 
     if (!employee?.employeeProfile) {
@@ -52,6 +66,20 @@ export const presenceService = {
     }
 
     const uniqueDates = [...new Set(dates)].sort();
+    const allowedPeriod = await companyPeriodService.getPeriod(companyId, month, year);
+    const allowedStartDate = new Date(`${allowedPeriod.startDate}T00:00:00.000Z`);
+    const allowedEndDate = new Date(`${allowedPeriod.endDate}T00:00:00.000Z`);
+
+    for (const date of uniqueDates) {
+      const parsedDate = toDateOnly(date);
+
+      if (parsedDate < allowedStartDate || parsedDate > allowedEndDate) {
+        throw new AppError(
+          `A data ${date} esta fora do periodo permitido (${allowedPeriod.startDate} ate ${allowedPeriod.endDate}).`,
+          400
+        );
+      }
+    }
 
     for (const date of uniqueDates) {
       const existing = await presenceRepository.findByDate(employeeUserId, toDateOnly(date));
@@ -95,6 +123,8 @@ export const presenceService = {
       const parsedDate = toDateOnly(date);
       cache.delete(`presence:list:${employeeUserId}:${parsedDate.getUTCFullYear()}:${parsedDate.getUTCMonth() + 1}`);
       cache.delete(`presence:summary:${employeeUserId}:${parsedDate.getUTCFullYear()}:${parsedDate.getUTCMonth() + 1}`);
+      cache.delete(`presence:list:${employeeUserId}:${year}:${month}:period`);
+      cache.delete(`presence:summary:${employeeUserId}:${year}:${month}:period`);
     }
     cache.deleteByPrefix('report:monthly:');
 
@@ -103,15 +133,19 @@ export const presenceService = {
     };
   },
 
-  async summary(employeeUserId: string, month: number, year: number) {
-    const cacheKey = `presence:summary:${employeeUserId}:${year}:${month}`;
+  async summary(employeeUserId: string, month: number, year: number, companyId?: string) {
+    const cacheKey = companyId
+      ? `presence:summary:${employeeUserId}:${year}:${month}:period`
+      : `presence:summary:${employeeUserId}:${year}:${month}`;
     const cached = cache.get<any>(cacheKey);
 
     if (cached) {
       return cached;
     }
 
-    const { start, end } = getMonthBounds(month, year);
+    const { start, end } = companyId
+      ? await companyPeriodService.getBounds(companyId, month, year)
+      : getMonthBounds(month, year);
     const aggregate = await presenceRepository.aggregate(employeeUserId, start, end);
 
     return cache.set(cacheKey, {
@@ -138,6 +172,8 @@ export const presenceService = {
     const month = record.presenceDate.getUTCMonth() + 1;
     cache.delete(`presence:list:${record.employeeUserId}:${year}:${month}`);
     cache.delete(`presence:summary:${record.employeeUserId}:${year}:${month}`);
+    cache.deleteByPrefix(`presence:list:${record.employeeUserId}:`);
+    cache.deleteByPrefix(`presence:summary:${record.employeeUserId}:`);
     cache.deleteByPrefix(`report:monthly:${companyId}:`);
 
     return { updated: 1 };
@@ -166,6 +202,8 @@ export const presenceService = {
       const month = record.presenceDate.getUTCMonth() + 1;
       cache.delete(`presence:list:${record.employeeUserId}:${year}:${month}`);
       cache.delete(`presence:summary:${record.employeeUserId}:${year}:${month}`);
+      cache.deleteByPrefix(`presence:list:${record.employeeUserId}:`);
+      cache.deleteByPrefix(`presence:summary:${record.employeeUserId}:`);
     }
     cache.deleteByPrefix(`report:monthly:${companyId}:`);
 
