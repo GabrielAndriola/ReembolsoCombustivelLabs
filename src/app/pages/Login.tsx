@@ -161,24 +161,6 @@ const Login: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mt-12">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 space-y-2 border border-white/20">
-              <div className="text-3xl font-bold text-white">95%</div>
-              <div className="text-sm text-primary-foreground/80">Reducao em erros</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 space-y-2 border border-white/20">
-              <div className="text-3xl font-bold text-white">2h</div>
-              <div className="text-sm text-primary-foreground/80">Economia por mes</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 space-y-2 border border-white/20">
-              <div className="text-3xl font-bold text-white">100%</div>
-              <div className="text-sm text-primary-foreground/80">Transparencia</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 space-y-2 border border-white/20">
-              <div className="text-3xl font-bold text-white">24/7</div>
-              <div className="text-sm text-primary-foreground/80">Acesso total</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

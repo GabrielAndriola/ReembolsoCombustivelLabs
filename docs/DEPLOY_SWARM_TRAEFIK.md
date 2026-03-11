@@ -100,9 +100,9 @@ Exemplo:
 ```env
 POSTGRES_DB=reembolso_combustivel
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=defina-uma-senha-forte
-DATABASE_URL=postgresql://postgres:defina-uma-senha-forte@db:5432/reembolso_combustivel?schema=public
-DIRECT_URL=postgresql://postgres:defina-uma-senha-forte@db:5432/reembolso_combustivel?schema=public
+POSTGRES_PASSWORD=12345678
+DATABASE_URL=postgresql://postgres:12345678@db:5432/reembolso_combustivel?schema=public
+DIRECT_URL=postgresql://postgres:12345678@db:5432/reembolso_combustivel?schema=public
 JWT_SECRET=defina-um-segredo-forte
 PORT=3001
 CORS_ORIGIN=https://meureembolso.crisdulabs.com.br

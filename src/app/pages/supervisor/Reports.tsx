@@ -13,6 +13,15 @@ import { formatPeriodLabel } from '../../lib/period';
 import { toast } from 'sonner';
 
 const DEFAULT_UNIT = '1';
+const CRISDU_XLSX_THEME = {
+  background: 'FFF4FBFF',
+  text: 'FF1F365C',
+  primary: 'FF2CC7E8',
+  accent: 'FF4D7EF6',
+  muted: 'FFEAF6FF',
+  border: 'FFCFE8F8',
+  white: 'FFFFFFFF'
+};
 
 const Reports: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState('3');
@@ -143,11 +152,64 @@ const Reports: React.FC = () => {
 
   const exportFormattedExcel = async () => {
     try {
-      const ExcelJS = (await import('exceljs')).default;
-      const workbook = new ExcelJS.Workbook();
+      const excelJsModule = await import('exceljs');
+      const Workbook =
+        excelJsModule.Workbook ??
+        excelJsModule.default?.Workbook;
+
+      if (!Workbook) {
+        throw new Error('ExcelJS Workbook export not found.');
+      }
+
+      const workbook = new Workbook();
       const worksheet = workbook.addWorksheet('Relatorio Operacional', {
-        views: [{ state: 'frozen', ySplit: 1 }]
+        views: [{ state: 'frozen', ySplit: 3 }]
       });
+
+      workbook.creator = 'Crisdu Labs';
+      workbook.company = 'Crisdu Labs';
+      workbook.subject = 'Relatorio operacional de reembolso';
+      workbook.title = 'Relatorio Operacional - Crisdu Labs';
+
+      worksheet.mergeCells('A1:G1');
+      worksheet.getCell('A1').value = 'Crisdu Labs | Relatorio Operacional';
+      worksheet.getCell('A1').font = {
+        name: 'Calibri',
+        size: 16,
+        bold: true,
+        color: { argb: CRISDU_XLSX_THEME.white }
+      };
+      worksheet.getCell('A1').alignment = {
+        horizontal: 'left',
+        vertical: 'middle'
+      };
+      worksheet.getCell('A1').fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: CRISDU_XLSX_THEME.accent }
+      };
+      worksheet.getRow(1).height = 26;
+
+      worksheet.mergeCells('A2:G2');
+      worksheet.getCell('A2').value = period
+        ? `Periodo: ${formatPeriodLabel(period)}`
+        : `Referencia: ${selectedMonth}/${selectedYear}`;
+      worksheet.getCell('A2').font = {
+        name: 'Calibri',
+        size: 11,
+        italic: true,
+        color: { argb: CRISDU_XLSX_THEME.text }
+      };
+      worksheet.getCell('A2').alignment = {
+        horizontal: 'left',
+        vertical: 'middle'
+      };
+      worksheet.getCell('A2').fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: CRISDU_XLSX_THEME.background }
+      };
+      worksheet.getRow(2).height = 20;
 
       worksheet.columns = [
         { header: 'Unidade', key: 'unit', width: 14 },
@@ -171,35 +233,50 @@ const Reports: React.FC = () => {
         }))
       );
 
-      const headerRow = worksheet.getRow(1);
-      headerRow.font = { bold: true, color: { argb: 'FF1F4E78' } };
+      const headerRow = worksheet.getRow(3);
+      headerRow.font = {
+        name: 'Calibri',
+        size: 11,
+        bold: true,
+        color: { argb: CRISDU_XLSX_THEME.white }
+      };
       headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
       headerRow.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFF4E7B2' }
+        fgColor: { argb: CRISDU_XLSX_THEME.primary }
       };
+      headerRow.height = 24;
 
       worksheet.autoFilter = {
-        from: 'A1',
-        to: 'G1'
+        from: 'A3',
+        to: 'G3'
       };
 
       worksheet.eachRow((row, rowNumber) => {
         row.height = 22;
         row.eachCell((cell) => {
           cell.border = {
-            top: { style: 'thin', color: { argb: 'FF808080' } },
-            left: { style: 'thin', color: { argb: 'FF808080' } },
-            bottom: { style: 'thin', color: { argb: 'FF808080' } },
-            right: { style: 'thin', color: { argb: 'FF808080' } }
+            top: { style: 'thin', color: { argb: CRISDU_XLSX_THEME.border } },
+            left: { style: 'thin', color: { argb: CRISDU_XLSX_THEME.border } },
+            bottom: { style: 'thin', color: { argb: CRISDU_XLSX_THEME.border } },
+            right: { style: 'thin', color: { argb: CRISDU_XLSX_THEME.border } }
           };
 
-          if (rowNumber > 1) {
+          if (rowNumber > 3) {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: rowNumber % 2 === 0 ? 'FFF9EFC9' : 'FFF4E7B2' }
+              fgColor: {
+                argb: rowNumber % 2 === 0
+                  ? CRISDU_XLSX_THEME.background
+                  : CRISDU_XLSX_THEME.muted
+              }
+            };
+            cell.font = {
+              name: 'Calibri',
+              size: 11,
+              color: { argb: CRISDU_XLSX_THEME.text }
             };
           }
         });
@@ -215,6 +292,17 @@ const Reports: React.FC = () => {
 
       ['A', 'B', 'C', 'G'].forEach((columnKey) => {
         worksheet.getColumn(columnKey).alignment = { horizontal: 'left', vertical: 'middle' };
+      });
+
+      worksheet.getColumn('F').eachCell((cell, rowNumber) => {
+        if (rowNumber > 3) {
+          cell.font = {
+            name: 'Calibri',
+            size: 11,
+            bold: true,
+            color: { argb: CRISDU_XLSX_THEME.accent }
+          };
+        }
       });
 
       const buffer = await workbook.xlsx.writeBuffer();

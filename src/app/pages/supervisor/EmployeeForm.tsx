@@ -37,7 +37,7 @@ const EmployeeForm: React.FC = () => {
     employeeId: '',
     team: '',
     status: 'active',
-    password: '12345678',
+    password: '',
     cep: '',
     street: '',
     number: '',
@@ -294,7 +294,7 @@ const EmployeeForm: React.FC = () => {
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="password">Senha *</Label>
-                <Input id="password" type="text" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} required />
+                <Input id="password" type="password" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} required />
               </div>
 
               <div className="space-y-2">
@@ -316,7 +316,7 @@ const EmployeeForm: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               <Label htmlFor="password">Nova senha</Label>
-              <Input id="password" type="text" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} disabled={isReadOnly} placeholder="Deixe em branco para manter a senha atual" />
+              <Input id="password" type="password" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} disabled={isReadOnly} placeholder="Deixe em branco para manter a senha atual" />
             </CardContent>
           </Card>
         )}
