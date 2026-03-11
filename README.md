@@ -43,7 +43,7 @@ npm install
 2. Revise o arquivo `.env`:
 
 ```env
-DATABASE_URL="postgresql://postgres:gremio3541A.%40@db.anlywqfolgtupofelvou.supabase.co:5432/postgres?sslmode=require"
+DATABASE_URL="SUPABASE URL"
 JWT_SECRET="changeme"
 PORT="3001"
 ```
