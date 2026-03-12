@@ -3,6 +3,10 @@ import { PrismaClient, PresenceStatus, UserRole } from '@prisma/client';
 import { hashPassword } from '../utils/password';
 
 const prisma = new PrismaClient();
+const DEFAULT_PASSWORD = '12345678';
+const DEFAULT_REIMBURSEMENT_PER_KM = 0.65;
+const DEFAULT_RATE_YEAR = 2026;
+const DEFAULT_RATE_MONTH = 3;
 
 const buildAddress = (data: {
   zipCode: string;
@@ -42,9 +46,9 @@ async function main() {
       zipCode: '01310-100',
       street: 'Avenida Paulista',
       number: '1578',
-      complement: '5º andar',
+      complement: '5o andar',
       district: 'Bela Vista',
-      city: 'São Paulo',
+      city: 'Sao Paulo',
       state: 'SP',
       latitude: -23.5613991,
       longitude: -46.6565712
@@ -59,7 +63,20 @@ async function main() {
     }
   });
 
-  const passwordHash = await hashPassword('12345678');
+  const passwordHash = await hashPassword(DEFAULT_PASSWORD);
+
+  const adminAddress = await prisma.address.create({
+    data: buildAddress({
+      zipCode: '01311-000',
+      street: 'Rua Haddock Lobo',
+      number: '595',
+      district: 'Cerqueira Cesar',
+      city: 'Sao Paulo',
+      state: 'SP',
+      latitude: -23.5610654,
+      longitude: -46.6619861
+    })
+  });
 
   const admin = await prisma.user.create({
     data: {
@@ -67,8 +84,42 @@ async function main() {
       name: 'Admin KM',
       email: 'admin@crisdu.com.br',
       passwordHash,
-      role: UserRole.ADMIN
+      role: UserRole.ADMIN,
+      employeeProfile: {
+        create: {
+          employeeCode: 'ADM001',
+          department: 'Administracao',
+          distanceToCompanyKm: 10,
+          distanceFromCompanyKm: 10
+        }
+      },
+      employeeAddresses: {
+        create: {
+          addressId: adminAddress.id,
+          isMain: true
+        }
+      },
+      monthlyRates: {
+        create: {
+          year: DEFAULT_RATE_YEAR,
+          month: DEFAULT_RATE_MONTH,
+          reimbursementPerKm: DEFAULT_REIMBURSEMENT_PER_KM
+        }
+      }
     }
+  });
+
+  const supervisorAddress = await prisma.address.create({
+    data: buildAddress({
+      zipCode: '95650-000',
+      street: 'Theodoro Julio Ritter',
+      number: '578',
+      district: 'Casa da Pedra',
+      city: 'Igrejinha',
+      state: 'RS',
+      latitude: -29.5772607,
+      longitude: -50.7932507
+    })
   });
 
   const supervisor = await prisma.user.create({
@@ -81,7 +132,22 @@ async function main() {
       employeeProfile: {
         create: {
           employeeCode: 'SUP001',
-          department: 'Gestão'
+          department: 'Gestao',
+          distanceToCompanyKm: 12,
+          distanceFromCompanyKm: 12
+        }
+      },
+      employeeAddresses: {
+        create: {
+          addressId: supervisorAddress.id,
+          isMain: true
+        }
+      },
+      monthlyRates: {
+        create: {
+          year: DEFAULT_RATE_YEAR,
+          month: DEFAULT_RATE_MONTH,
+          reimbursementPerKm: DEFAULT_REIMBURSEMENT_PER_KM
         }
       }
     }
@@ -93,7 +159,7 @@ async function main() {
       email: 'maria.santos@crisdu.com.br',
       employeeCode: 'EMP042',
       department: 'Comercial',
-      reimbursementPerKm: 0.85,
+      reimbursementPerKm: DEFAULT_REIMBURSEMENT_PER_KM,
       distanceToCompanyKm: 12,
       distanceFromCompanyKm: 12,
       address: buildAddress({
@@ -101,7 +167,7 @@ async function main() {
         street: 'Rua das Flores',
         number: '123',
         district: 'Vila Mariana',
-        city: 'São Paulo',
+        city: 'Sao Paulo',
         state: 'SP',
         latitude: -23.5893917,
         longitude: -46.6340278
@@ -109,19 +175,19 @@ async function main() {
       dates: ['2026-03-03', '2026-03-04', '2026-03-06']
     },
     {
-      name: 'João Oliveira',
+      name: 'Joao Oliveira',
       email: 'joao.oliveira@crisdu.com.br',
       employeeCode: 'EMP087',
       department: 'TI',
-      reimbursementPerKm: 0.92,
+      reimbursementPerKm: DEFAULT_REIMBURSEMENT_PER_KM,
       distanceToCompanyKm: 9,
       distanceFromCompanyKm: 9,
       address: buildAddress({
         zipCode: '05432-000',
         street: 'Rua Augusta',
         number: '456',
-        district: 'Consolação',
-        city: 'São Paulo',
+        district: 'Consolacao',
+        city: 'Sao Paulo',
         state: 'SP',
         latitude: -23.5557714,
         longitude: -46.6629868
@@ -133,15 +199,15 @@ async function main() {
       email: 'ana.costa@crisdu.com.br',
       employeeCode: 'EMP015',
       department: 'RH',
-      reimbursementPerKm: 0.88,
+      reimbursementPerKm: DEFAULT_REIMBURSEMENT_PER_KM,
       distanceToCompanyKm: 16,
       distanceFromCompanyKm: 16,
       address: buildAddress({
         zipCode: '01046-010',
         street: 'Avenida Ipiranga',
         number: '789',
-        district: 'República',
-        city: 'São Paulo',
+        district: 'Republica',
+        city: 'Sao Paulo',
         state: 'SP',
         latitude: -23.5440506,
         longitude: -46.6452361
@@ -185,14 +251,16 @@ async function main() {
     await prisma.monthlyRate.create({
       data: {
         employeeUserId: user.id,
-        year: 2026,
-        month: 3,
+        year: DEFAULT_RATE_YEAR,
+        month: DEFAULT_RATE_MONTH,
         reimbursementPerKm: employeeData.reimbursementPerKm
       }
     });
 
     const oneWayDistance = employeeData.distanceToCompanyKm;
-    const roundTripDistance = Number((employeeData.distanceToCompanyKm + employeeData.distanceFromCompanyKm).toFixed(2));
+    const roundTripDistance = Number(
+      (employeeData.distanceToCompanyKm + employeeData.distanceFromCompanyKm).toFixed(2)
+    );
 
     for (const date of employeeData.dates) {
       await prisma.presenceRecord.create({
@@ -203,19 +271,25 @@ async function main() {
           distanceOneWayKm: oneWayDistance,
           distanceRoundTripKm: roundTripDistance,
           reimbursementPerKmApplied: employeeData.reimbursementPerKm,
-          reimbursementAmount: Number((roundTripDistance * employeeData.reimbursementPerKm).toFixed(2)),
-          status: date.endsWith('06') || date.endsWith('07') ? PresenceStatus.PENDING : PresenceStatus.APPROVED
+          reimbursementAmount: Number(
+            (roundTripDistance * employeeData.reimbursementPerKm).toFixed(2)
+          ),
+          status:
+            date.endsWith('06') || date.endsWith('07')
+              ? PresenceStatus.PENDING
+              : PresenceStatus.APPROVED
         }
       });
     }
   }
 
-  console.log('Seed concluído.');
+  console.log('Seed concluido.');
   console.log({
     admin: admin.email,
     supervisor: supervisor.email,
     employees: employees.map((employee) => employee.email),
-    password: '12345678'
+    reimbursementPerKm: DEFAULT_REIMBURSEMENT_PER_KM,
+    password: DEFAULT_PASSWORD
   });
 }
 

@@ -35,7 +35,7 @@ const SupervisorDashboard: React.FC = () => {
         setPeriodEndDay(String(response.period.endDay));
         setIsLoading(false);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar o dashboard gerencial.');
+        toast.error(error instanceof Error ? error.message : 'Não foi possível carregar o dashboard gerencial.');
         setIsLoading(false);
       }
     };
@@ -92,7 +92,7 @@ const SupervisorDashboard: React.FC = () => {
     const endDay = Number(periodEndDay);
 
     if (!Number.isInteger(startDay) || startDay < 1 || startDay > 31 || !Number.isInteger(endDay) || endDay < 1 || endDay > 31) {
-      toast.error('Informe dias validos entre 1 e 31.');
+      toast.error('Informe dias válidos entre 1 e 31.');
       return;
     }
 
@@ -107,7 +107,7 @@ const SupervisorDashboard: React.FC = () => {
       });
 
       setPeriod(updatedPeriod);
-      toast.success('Periodo do mes salvo com sucesso.');
+      toast.success('Período do mês salvo com sucesso.');
 
       const response = await api.getSupervisorOverview(Number(selectedMonth), Number(selectedYear));
       setEmployees(response.employees);
@@ -116,7 +116,7 @@ const SupervisorDashboard: React.FC = () => {
       setPeriodStartDay(String(response.period.startDay));
       setPeriodEndDay(String(response.period.endDay));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel salvar o periodo.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível salvar o período.');
     } finally {
       setIsSavingPeriod(false);
     }
@@ -131,7 +131,7 @@ const SupervisorDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Dashboard Gerencial</h1>
-          <p className="text-muted-foreground">Visao geral dos reembolsos e presencas da equipe</p>
+          <p className="text-muted-foreground">Visão geral dos reembolsos e presenças da equipe</p>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ const SupervisorDashboard: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="1">Janeiro</SelectItem>
                   <SelectItem value="2">Fevereiro</SelectItem>
-                  <SelectItem value="3">Marco</SelectItem>
+                  <SelectItem value="3">Março</SelectItem>
                   <SelectItem value="4">Abril</SelectItem>
                   <SelectItem value="5">Maio</SelectItem>
                   <SelectItem value="6">Junho</SelectItem>
@@ -191,18 +191,18 @@ const SupervisorDashboard: React.FC = () => {
               />
 
               <Button onClick={handleSavePeriod} disabled={isSavingPeriod}>
-                {isSavingPeriod ? 'Salvando...' : 'Salvar periodo'}
+                {isSavingPeriod ? 'Salvando...' : 'Salvar período'}
               </Button>
             </div>
           </div>
           <div className="mt-4 text-sm text-muted-foreground">
             {period ? (
               <span>
-                Periodo configurado: {formatPeriodLabel(period)}
-                {period.isDefault ? ' (padrao 1 a 30)' : ''}
+                Período configurado: {formatPeriodLabel(period)}
+                {period.isDefault ? ' (padrão 1 a 30)' : ''}
               </span>
             ) : (
-              <span>Periodo configurado: padrao de 1 a 30.</span>
+              <span>Período configurado: padrão de 1 a 30.</span>
             )}
           </div>
         </CardContent>
@@ -213,7 +213,7 @@ const SupervisorDashboard: React.FC = () => {
           <CardHeader className="pb-3">
             <CardDescription className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Funcionarios Ativos
+              Funcionários Ativos
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -231,7 +231,7 @@ const SupervisorDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold text-foreground">{totalDays}</div>
-            <p className="text-xs text-muted-foreground mt-1">Dias presenciais no periodo</p>
+            <p className="text-xs text-muted-foreground mt-1">Dias presenciais no período</p>
           </CardContent>
         </Card>
 
@@ -270,14 +270,14 @@ const SupervisorDashboard: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-chart-4" />
-              Aprovacoes Pendentes
+              Aprovações Pendentes
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-foreground">
-              Existem <strong>{pendingApprovals} registros</strong> aguardando sua aprovacao.
+              Existem <strong>{pendingApprovals} registros</strong> aguardando sua aprovação.
             </p>
-            <p className="text-xs text-muted-foreground mt-2">Clique para abrir a tela de relatorios.</p>
+            <p className="text-xs text-muted-foreground mt-2">Clique para abrir a tela de relatórios.</p>
           </CardContent>
         </Card>
       )}
@@ -285,8 +285,8 @@ const SupervisorDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Dias Presenciais por Funcionario</CardTitle>
-            <CardDescription>Comparativo de presenca da equipe</CardDescription>
+            <CardTitle>Dias Presenciais por Funcionário</CardTitle>
+            <CardDescription>Comparativo de presença da equipe</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -306,7 +306,7 @@ const SupervisorDashboard: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Status dos Registros</CardTitle>
-            <CardDescription>Distribuicao por status de aprovacao</CardDescription>
+            <CardDescription>Distribuição por status de aprovação</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80">
@@ -335,13 +335,13 @@ const SupervisorDashboard: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Top 5 Funcionarios</CardTitle>
-          <CardDescription>Maiores valores de reembolso no periodo</CardDescription>
+          <CardTitle>Top 5 Funcionários</CardTitle>
+          <CardDescription>Maiores valores de reembolso no período</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {topEmployees.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum registro encontrado para o periodo selecionado.</p>
+              <p className="text-sm text-muted-foreground">Nenhum registro encontrado para o período selecionado.</p>
             ) : (
               topEmployees.map((employee, index) => (
                 <div key={employee.employeeId} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg border border-border">

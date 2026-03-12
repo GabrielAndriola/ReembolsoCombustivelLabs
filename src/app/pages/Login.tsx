@@ -64,9 +64,9 @@ const Login: React.FC = () => {
               </div>
             </div>
             <div>
-              <h1 className="text-3xl font-semibold text-foreground">Reembolso Combustivel Labs</h1>
+              <h1 className="text-3xl font-semibold text-foreground">Reembolso Combustível Labs</h1>
               <p className="text-muted-foreground mt-2">
-                Plataforma Labs para gestao de reembolso de combustivel
+                Plataforma Labs para gestão de reembolso de combustível
               </p>
             </div>
           </div>

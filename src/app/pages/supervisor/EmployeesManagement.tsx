@@ -38,7 +38,7 @@ const EmployeesManagement: React.FC = () => {
       setEmployees(await api.getEmployees());
       setIsLoading(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os funcionarios.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível carregar os funcionários.');
       setIsLoading(false);
     }
   };
@@ -55,11 +55,11 @@ const EmployeesManagement: React.FC = () => {
     setIsDeleting(true);
     try {
       await api.deleteEmployee(employeeToDelete.id);
-      toast.success('Funcionario excluido com sucesso.');
+      toast.success('Funcionário excluído com sucesso.');
       setEmployeeToDelete(null);
       await loadEmployees();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel excluir o funcionario.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível excluir o funcionário.');
     } finally {
       setIsDeleting(false);
     }
@@ -86,19 +86,19 @@ const EmployeesManagement: React.FC = () => {
   const activeEmployees = employees.filter((employee) => employee.active).length;
 
   if (isLoading && employees.length === 0) {
-    return <LoadingState message="Carregando funcionarios..." />;
+    return <LoadingState message="Carregando funcionários..." />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Gestao de Funcionarios</h1>
-          <p className="text-muted-foreground">Gerencie os colaboradores e suas informacoes</p>
+          <h1 className="text-2xl font-semibold text-foreground">Gestão de Funcionários</h1>
+          <p className="text-muted-foreground">Gerencie os colaboradores e suas informações</p>
         </div>
         <Button onClick={() => navigate('/supervisor/employees/new')} className="gap-2">
           <Plus className="w-4 h-4" />
-          Novo Funcionario
+          Novo Funcionário
         </Button>
       </div>
 
@@ -115,7 +115,7 @@ const EmployeesManagement: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nome, e-mail ou matricula..."
+                  placeholder="Buscar por nome, e-mail ou matrícula..."
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   className="pl-10"
@@ -159,38 +159,38 @@ const EmployeesManagement: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-semibold text-foreground">{employees.length}</div>
-            <p className="text-sm text-muted-foreground">Total de funcionarios</p>
+            <p className="text-sm text-muted-foreground">Total de funcionários</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-semibold text-accent">{activeEmployees}</div>
-            <p className="text-sm text-muted-foreground">Funcionarios ativos</p>
+            <p className="text-sm text-muted-foreground">Funcionários ativos</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-semibold text-muted-foreground">{employees.length - activeEmployees}</div>
-            <p className="text-sm text-muted-foreground">Funcionarios inativos</p>
+            <p className="text-sm text-muted-foreground">Funcionários inativos</p>
           </CardContent>
         </Card>
       </div>
 
       <Card className="hidden md:block">
         <CardHeader>
-          <CardTitle>Lista de Funcionarios</CardTitle>
-          <CardDescription>{filteredEmployees.length} funcionario(s) encontrado(s)</CardDescription>
+          <CardTitle>Lista de Funcionários</CardTitle>
+          <CardDescription>{filteredEmployees.length} funcionário(s) encontrado(s)</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Funcionario</TableHead>
-                <TableHead>Matricula</TableHead>
+                <TableHead>Funcionário</TableHead>
+                <TableHead>Matrícula</TableHead>
                 <TableHead>Equipe</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">R$/km</TableHead>
-                <TableHead className="text-right">Acoes</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,11 +242,11 @@ const EmployeesManagement: React.FC = () => {
       <AlertDialog open={Boolean(employeeToDelete)} onOpenChange={(open) => !open && setEmployeeToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir funcionario</AlertDialogTitle>
+            <AlertDialogTitle>Excluir funcionário</AlertDialogTitle>
             <AlertDialogDescription>
               {employeeToDelete
-                ? `Essa acao vai excluir ${employeeToDelete.name} e os registros relacionados.`
-                : 'Essa acao vai excluir o funcionario e os registros relacionados.'}
+                ? `Essa ação vai excluir ${employeeToDelete.name} e os registros relacionados.`
+                : 'Essa ação vai excluir o funcionário e os registros relacionados.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

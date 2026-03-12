@@ -19,7 +19,7 @@ type CalendarMonth = {
 };
 
 const monthNames = [
-  'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
@@ -179,9 +179,9 @@ const AttendanceCalendar: React.FC<AttendanceCalendarProps> = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h3 className="font-semibold text-foreground">Periodo operacional</h3>
+          <h3 className="font-semibold text-foreground">Período operacional</h3>
           <p className="text-sm text-muted-foreground">
-            {formatDateLabel(periodStart)} ate {formatDateLabel(periodEnd)}
+            {formatDateLabel(periodStart)} até {formatDateLabel(periodEnd)}
           </p>
         </div>
         <div className="flex gap-2">

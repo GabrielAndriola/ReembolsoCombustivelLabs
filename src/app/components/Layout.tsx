@@ -33,7 +33,7 @@ const Layout: React.FC = () => {
       icon: <LayoutDashboard className="w-5 h-5" />
     },
     {
-      label: 'Historico',
+      label: 'Histórico',
       path: '/employee/history',
       icon: <Calendar className="w-5 h-5" />
     }
@@ -51,22 +51,22 @@ const Layout: React.FC = () => {
       icon: <Calendar className="w-5 h-5" />
     },
     {
-      label: 'Meu Historico',
+      label: 'Meu Histórico',
       path: '/supervisor/my-history',
       icon: <FileText className="w-5 h-5" />
     },
     {
-      label: 'Funcionarios',
+      label: 'Funcionários',
       path: '/supervisor/employees',
       icon: <Users className="w-5 h-5" />
     },
     {
-      label: 'Relatorios',
+      label: 'Relatórios',
       path: '/supervisor/reports',
       icon: <FileText className="w-5 h-5" />
     },
     {
-      label: 'Configuracoes',
+      label: 'Configurações',
       path: '/supervisor/settings',
       icon: <Settings className="w-5 h-5" />
     }
@@ -90,7 +90,7 @@ const Layout: React.FC = () => {
                 <img src="/labs.png" alt="Labs" className="w-6 h-6 object-contain" />
               </div>
             <div className="flex flex-col">
-              <span className="text-sidebar-foreground font-semibold">Reembolso Combustivel Labs</span>
+              <span className="text-sidebar-foreground font-semibold">Reembolso Combustível Labs</span>
               <span className="text-xs text-white/92">Plataforma Labs</span>
             </div>
           </div>
@@ -152,7 +152,7 @@ const Layout: React.FC = () => {
                     <img src="/labs.png" alt="Labs" className="w-6 h-6 object-contain" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sidebar-foreground font-semibold">Reembolso Combustivel Labs</span>
+                    <span className="text-sidebar-foreground font-semibold">Reembolso Combustível Labs</span>
                     <span className="text-xs text-white/92">Plataforma Labs</span>
                   </div>
                 </div>
@@ -223,7 +223,7 @@ const Layout: React.FC = () => {
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
                 <img src="/labs.png" alt="Labs" className="w-5 h-5 object-contain" />
               </div>
-              <span className="font-semibold text-foreground">Reembolso Combustivel Labs</span>
+              <span className="font-semibold text-foreground">Reembolso Combustível Labs</span>
             </div>
             <div className="w-6" />
           </div>

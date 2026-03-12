@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Check, FileSpreadsheet, Filter, TrendingUp, Users, Calendar, DollarSign, X } from 'lucide-react';
 import { api, type CompanyPeriodResponse, type EmployeeResponse, type MonthlyReportResponse } from '../../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -42,7 +42,7 @@ const Reports: React.FC = () => {
       setPeriod(response.period);
       setIsLoading(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os relatorios.');
+      toast.error(error instanceof Error ? error.message : 'NÃ£o foi possÃ­vel carregar os relatÃ³rios.');
       setIsLoading(false);
     }
   };
@@ -127,7 +127,7 @@ const Reports: React.FC = () => {
   };
 
   const exportCsv = () => {
-    const headers = ['Unidade', 'Codigo', 'Colaborador', 'TOTAL KM / DIA', 'QNTD DIAS NO MES', 'TOTAL R$', 'Observacao'];
+    const headers = ['Unidade', 'CÃ³digo', 'Colaborador', 'TOTAL KM / DIA', 'QNTD DIAS NO MÃŠS', 'TOTAL R$', 'ObservaÃ§Ã£o'];
     const rows = operationalRows.map((row) => [
       row.unit,
       row.code,
@@ -162,17 +162,17 @@ const Reports: React.FC = () => {
       }
 
       const workbook = new Workbook();
-      const worksheet = workbook.addWorksheet('Relatorio Operacional', {
+      const worksheet = workbook.addWorksheet('RelatÃ³rio Operacional', {
         views: [{ state: 'frozen', ySplit: 3 }]
       });
 
       workbook.creator = 'Crisdu Labs';
       workbook.company = 'Crisdu Labs';
-      workbook.subject = 'Relatorio operacional de reembolso';
-      workbook.title = 'Relatorio Operacional - Crisdu Labs';
+      workbook.subject = 'RelatÃ³rio operacional de reembolso';
+      workbook.title = 'RelatÃ³rio Operacional - Crisdu Labs';
 
       worksheet.mergeCells('A1:G1');
-      worksheet.getCell('A1').value = 'Crisdu Labs | Relatorio Operacional';
+      worksheet.getCell('A1').value = 'Crisdu Labs | RelatÃ³rio Operacional';
       worksheet.getCell('A1').font = {
         name: 'Calibri',
         size: 16,
@@ -192,7 +192,7 @@ const Reports: React.FC = () => {
 
       worksheet.mergeCells('A2:G2');
       worksheet.getCell('A2').value = period
-        ? `Periodo: ${formatPeriodLabel(period)}`
+        ? `PerÃ­odo: ${formatPeriodLabel(period)}`
         : `Referencia: ${selectedMonth}/${selectedYear}`;
       worksheet.getCell('A2').font = {
         name: 'Calibri',
@@ -212,17 +212,27 @@ const Reports: React.FC = () => {
       worksheet.getRow(2).height = 20;
 
       worksheet.columns = [
-        { header: 'Unidade', key: 'unit', width: 14 },
-        { header: 'Codigo', key: 'code', width: 14 },
-        { header: 'Colaborador', key: 'collaborator', width: 30 },
-        { header: 'TOTAL KM / DIA', key: 'totalDailyKm', width: 18 },
-        { header: 'QNTD DIAS NO MES', key: 'quantityDays', width: 18 },
-        { header: 'TOTAL R$', key: 'totalReimbursement', width: 18 },
-        { header: 'Observacao', key: 'observation', width: 28 }
+        { key: 'unit', width: 14 },
+        { key: 'code', width: 14 },
+        { key: 'collaborator', width: 30 },
+        { key: 'totalDailyKm', width: 18 },
+        { key: 'quantityDays', width: 18 },
+        { key: 'totalReimbursement', width: 18 },
+        { key: 'observation', width: 28 }
       ];
 
-      worksheet.addRows(
-        operationalRows.map((row) => ({
+      worksheet.getRow(3).values = [
+        'Unidade',
+        'Código',
+        'Colaborador',
+        'TOTAL KM / DIA',
+        'QNTD DIAS NO MÊS',
+        'TOTAL R$',
+        'Observação'
+      ];
+
+      operationalRows.forEach((row) => {
+        worksheet.addRow({
           unit: row.unit,
           code: row.code,
           collaborator: row.collaborator,
@@ -230,8 +240,8 @@ const Reports: React.FC = () => {
           quantityDays: row.quantityDays,
           totalReimbursement: row.totalReimbursement,
           observation: row.observation
-        }))
-      );
+        });
+      });
 
       const headerRow = worksheet.getRow(3);
       headerRow.font = {
@@ -315,7 +325,7 @@ const Reports: React.FC = () => {
 
       toast.success('Excel formatado exportado com sucesso.');
     } catch (error) {
-      toast.error('Nao foi possivel gerar o arquivo Excel formatado.');
+      toast.error('NÃ£o foi possÃ­vel gerar o arquivo Excel formatado.');
     }
   };
 
@@ -327,7 +337,7 @@ const Reports: React.FC = () => {
       toast.success(status === 'approved' ? 'Registro aprovado.' : 'Registro rejeitado.');
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel atualizar o registro.');
+      toast.error(error instanceof Error ? error.message : 'NÃ£o foi possÃ­vel atualizar o registro.');
     } finally {
       setIsUpdating(false);
     }
@@ -335,7 +345,7 @@ const Reports: React.FC = () => {
 
   const handleApproveAllPending = async () => {
     if (pendingRecordIds.length === 0) {
-      toast.info('Nao ha registros pendentes no filtro atual.');
+      toast.info('NÃ£o hÃ¡ registros pendentes no filtro atual.');
       return;
     }
 
@@ -346,25 +356,25 @@ const Reports: React.FC = () => {
       toast.success(`${result.updated} registro(s) pendente(s) aprovado(s).`);
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel aprovar os registros pendentes.');
+      toast.error(error instanceof Error ? error.message : 'NÃ£o foi possÃ­vel aprovar os registros pendentes.');
     } finally {
       setIsUpdating(false);
     }
   };
 
   if (isLoading && employees.length === 0 && report.length === 0) {
-    return <LoadingState message="Carregando relatorios..." />;
+    return <LoadingState message="Carregando relatÃ³rios..." />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Relatorios</h1>
-          <p className="text-muted-foreground">Analise detalhada de reembolsos e presencas</p>
+          <h1 className="text-2xl font-semibold text-foreground">RelatÃ³rios</h1>
+          <p className="text-muted-foreground">AnÃ¡lise detalhada de reembolsos e presenÃ§as</p>
           {period && (
             <p className="text-sm text-muted-foreground mt-1">
-              Periodo considerado: {formatPeriodLabel(period)}
+              PerÃ­odo considerado: {formatPeriodLabel(period)}
             </p>
           )}
         </div>
@@ -386,7 +396,7 @@ const Reports: React.FC = () => {
               <SelectContent>
                 <SelectItem value="1">Janeiro</SelectItem>
                 <SelectItem value="2">Fevereiro</SelectItem>
-                <SelectItem value="3">Marco</SelectItem>
+                <SelectItem value="3">MarÃ§o</SelectItem>
                 <SelectItem value="4">Abril</SelectItem>
                 <SelectItem value="5">Maio</SelectItem>
                 <SelectItem value="6">Junho</SelectItem>
@@ -413,10 +423,10 @@ const Reports: React.FC = () => {
 
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
               <SelectTrigger>
-                <SelectValue placeholder="Todos os funcionarios" />
+                <SelectValue placeholder="Todos os funcionÃ¡rios" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os funcionarios</SelectItem>
+                <SelectItem value="all">Todos os funcionÃ¡rios</SelectItem>
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
                     {employee.name}
@@ -448,12 +458,12 @@ const Reports: React.FC = () => {
           <CardHeader className="pb-3">
             <CardDescription className="flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Funcionarios
+              FuncionÃ¡rios
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-semibold text-foreground">{uniqueEmployees}</div>
-            <p className="text-xs text-muted-foreground mt-1">Com presenca registrada</p>
+            <p className="text-xs text-muted-foreground mt-1">Com presenÃ§a registrada</p>
           </CardContent>
         </Card>
 
@@ -499,27 +509,27 @@ const Reports: React.FC = () => {
 
       <Tabs defaultValue="operational" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="operational">Visao Operacional</TabsTrigger>
-          <TabsTrigger value="detailed">Relatorio Detalhado</TabsTrigger>
+          <TabsTrigger value="operational">VisÃ£o Operacional</TabsTrigger>
+          <TabsTrigger value="detailed">RelatÃ³rio Detalhado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="operational">
           <Card>
             <CardHeader>
-              <CardTitle>Visao Padrao para Supervisor</CardTitle>
-              <CardDescription>Resumo mensal no formato operacional solicitado pela supervisao</CardDescription>
+              <CardTitle>VisÃ£o PadrÃ£o para Supervisor</CardTitle>
+              <CardDescription>Resumo mensal no formato operacional solicitado pela supervisÃ£o</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Unidade</TableHead>
-                    <TableHead>Codigo</TableHead>
+                    <TableHead>CÃ³digo</TableHead>
                     <TableHead>Colaborador</TableHead>
                     <TableHead className="text-right">TOTAL KM / DIA</TableHead>
                     <TableHead className="text-right">QNTD DIAS NO MES</TableHead>
                     <TableHead className="text-right">TOTAL R$</TableHead>
-                    <TableHead>Observacao</TableHead>
+                    <TableHead>ObservaÃ§Ã£o</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -543,8 +553,8 @@ const Reports: React.FC = () => {
         <TabsContent value="detailed">
           <Card>
             <CardHeader>
-              <CardTitle>Relatorio Detalhado por Registro</CardTitle>
-              <CardDescription>Lista completa de todos os lancamentos do periodo</CardDescription>
+              <CardTitle>RelatÃ³rio Detalhado por Registro</CardTitle>
+              <CardDescription>Lista completa de todos os lanÃ§amentos do perÃ­odo</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -557,7 +567,7 @@ const Reports: React.FC = () => {
                     <TableHead className="text-right">R$/km</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Acoes</TableHead>
+                    <TableHead className="text-right">AÃ§Ãµes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -585,7 +595,7 @@ const Reports: React.FC = () => {
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Sem acoes</span>
+                          <span className="text-xs text-muted-foreground">Sem aÃ§Ãµes</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -601,3 +611,4 @@ const Reports: React.FC = () => {
 };
 
 export default Reports;
+

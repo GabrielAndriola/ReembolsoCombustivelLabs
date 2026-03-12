@@ -223,7 +223,7 @@ export const employeeService = {
   async updateEmployee(companyId: string, employeeId: string, payload: any) {
     const existingEmployee = await userRepository.findEmployeeById(companyId, employeeId);
 
-    if (!existingEmployee?.employeeProfile) {
+    if (!existingEmployee) {
       throw new AppError('Funcionario nao encontrado.', 404);
     }
 
@@ -258,39 +258,61 @@ export const employeeService = {
         }
       });
 
-      await transaction.employeeProfile.update({
-        where: { userId: employeeId },
-        data: {
-          employeeCode: normalizedEmployeeCode,
-          department: payload.department,
-          supervisorId: payload.supervisorId ?? null,
-          distanceToCompanyKm: payload.distanceToCompanyKm,
-          distanceFromCompanyKm: payload.distanceFromCompanyKm
-        }
-      });
+      const profileData = {
+        employeeCode: normalizedEmployeeCode,
+        department: payload.department,
+        supervisorId: payload.supervisorId ?? null,
+        distanceToCompanyKm: payload.distanceToCompanyKm,
+        distanceFromCompanyKm: payload.distanceFromCompanyKm
+      };
 
-      const mainAddress = existingEmployee.employeeAddresses[0]?.address;
-
-      if (!mainAddress) {
-        throw new AppError('Endereco principal do funcionario nao encontrado.', 400);
+      if (existingEmployee.employeeProfile) {
+        await transaction.employeeProfile.update({
+          where: { userId: employeeId },
+          data: profileData
+        });
+      } else {
+        await transaction.employeeProfile.create({
+          data: {
+            userId: employeeId,
+            ...profileData
+          }
+        });
       }
 
-      await transaction.address.update({
-        where: { id: mainAddress.id },
-        data: {
-          zipCode: payload.address.zipCode,
-          street: payload.address.street,
-          number: payload.address.number,
-          complement: payload.address.complement,
-          district: payload.address.district,
-          city: payload.address.city,
-          state: payload.address.state,
-          country: payload.address.country ?? 'Brasil',
-          latitude: payload.address.latitude ?? null,
-          longitude: payload.address.longitude ?? null,
-          formattedAddress: payload.address.formattedAddress
-        }
-      });
+      const mainAddress = existingEmployee.employeeAddresses[0]?.address;
+      const addressData = {
+        zipCode: payload.address.zipCode,
+        street: payload.address.street,
+        number: payload.address.number,
+        complement: payload.address.complement,
+        district: payload.address.district,
+        city: payload.address.city,
+        state: payload.address.state,
+        country: payload.address.country ?? 'Brasil',
+        latitude: payload.address.latitude ?? null,
+        longitude: payload.address.longitude ?? null,
+        formattedAddress: payload.address.formattedAddress
+      };
+
+      if (mainAddress) {
+        await transaction.address.update({
+          where: { id: mainAddress.id },
+          data: addressData
+        });
+      } else {
+        const address = await transaction.address.create({
+          data: addressData
+        });
+
+        await transaction.employeeAddress.create({
+          data: {
+            employeeUserId: employeeId,
+            addressId: address.id,
+            isMain: true
+          }
+        });
+      }
 
       await transaction.monthlyRate.upsert({
         where: {

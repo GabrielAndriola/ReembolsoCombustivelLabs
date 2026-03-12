@@ -39,8 +39,7 @@ const EmployeeDashboard: React.FC = () => {
       setPeriod(response.period);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível carregar o dashboard.');
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
   };
@@ -131,7 +130,7 @@ const EmployeeDashboard: React.FC = () => {
             <div className="text-3xl font-semibold text-foreground">{summary.totalPresenceDays}</div>
             <p className="text-xs text-muted-foreground mt-1">em {periodLabel}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {registeredElapsedDays} com presencial / {missingElapsedDays} sem presencial ate hoje
+              {registeredElapsedDays} com presencial / {missingElapsedDays} sem presencial até hoje
             </p>
           </CardContent>
         </Card>
@@ -204,7 +203,7 @@ const EmployeeDashboard: React.FC = () => {
                       : `${selectedDates.length} dia(s) pronto(s) para registrar`}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Periodo aberto do dia 20 do mes anterior ate o dia 30 do mes atual. Finais de semana, datas futuras e dias ja lancados ficam bloqueados.
+                    Período aberto do dia 20 do mês anterior até o dia 30 do mês atual. Finais de semana, datas futuras e dias já lançados ficam bloqueados.
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -243,7 +242,7 @@ const EmployeeDashboard: React.FC = () => {
             {monthlyAttendances.length === 0 ? (
               <div className="text-center py-8">
                 <CalendarIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">Nenhum registro no periodo selecionado</p>
+                <p className="text-muted-foreground">Nenhum registro no período selecionado</p>
               </div>
             ) : (
               <div className="space-y-3">

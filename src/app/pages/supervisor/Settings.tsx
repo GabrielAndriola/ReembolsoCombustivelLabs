@@ -14,7 +14,7 @@ const Settings: React.FC = () => {
   const [targets, setTargets] = useState<RateTargetResponse[]>([]);
   const [applyToAll, setApplyToAll] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [valuePerKm, setValuePerKm] = useState('0.85');
+  const [valuePerKm, setValuePerKm] = useState('0.65');
   const [month, setMonth] = useState(String(new Date().getMonth() + 1));
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [isSaving, setIsSaving] = useState(false);
@@ -66,7 +66,7 @@ const Settings: React.FC = () => {
       });
       setIsLoading(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar as configuracoes.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível carregar as configurações.');
       setIsLoading(false);
     }
   };
@@ -97,12 +97,12 @@ const Settings: React.FC = () => {
     const reimbursementPerKm = Number(valuePerKm);
 
     if (reimbursementPerKm <= 0) {
-      toast.error('Informe um valor por km valido.');
+      toast.error('Informe um valor por km válido.');
       return;
     }
 
     if (!applyToAll && selectedIds.length === 0) {
-      toast.error('Selecione pelo menos um usuario para aplicar a nova tarifa.');
+      toast.error('Selecione pelo menos um usuário para aplicar a nova tarifa.');
       return;
     }
 
@@ -117,10 +117,10 @@ const Settings: React.FC = () => {
         userIds: applyToAll ? undefined : selectedIds
       });
       setValuePerKm(reimbursementPerKm.toFixed(2));
-      toast.success(`Tarifa aplicada para ${result.updated} usuario(s).`);
+      toast.success(`Tarifa aplicada para ${result.updated} usuário(s).`);
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel aplicar a nova tarifa.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível aplicar a nova tarifa.');
     } finally {
       setIsSaving(false);
     }
@@ -143,7 +143,7 @@ const Settings: React.FC = () => {
       !companyAddress.state ||
       !companyAddress.formattedAddress
     ) {
-      toast.error('Preencha os campos obrigatorios do endereco da empresa.');
+      toast.error('Preencha os campos obrigatórios do endereço da empresa.');
       return;
     }
 
@@ -163,24 +163,24 @@ const Settings: React.FC = () => {
         longitude: companyAddress.longitude ? Number(companyAddress.longitude) : null,
         formattedAddress: companyAddress.formattedAddress
       });
-      toast.success('Endereco da empresa atualizado.');
+      toast.success('Endereço da empresa atualizado.');
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel atualizar o endereco da empresa.');
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o endereço da empresa.');
     } finally {
       setIsSavingCompanyAddress(false);
     }
   };
 
   if (isLoading && !profile) {
-    return <LoadingState message="Carregando configuracoes..." />;
+    return <LoadingState message="Carregando configurações..." />;
   }
 
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Configuracoes</h1>
-        <p className="text-muted-foreground">Gerencie tarifa de reembolso e informacoes atuais do ambiente.</p>
+        <h1 className="text-2xl font-semibold text-foreground">Configurações</h1>
+        <p className="text-muted-foreground">Gerencie tarifa de reembolso e informações atuais do ambiente.</p>
       </div>
 
       <Card>
@@ -189,7 +189,7 @@ const Settings: React.FC = () => {
             <DollarSign className="w-5 h-5" />
             Definir R$/km
           </CardTitle>
-          <CardDescription>Supervisor e admin podem aplicar uma nova tarifa para usuarios selecionados ou para todos.</CardDescription>
+          <CardDescription>Supervisor e admin podem aplicar uma nova tarifa para usuários selecionados ou para todos.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -198,7 +198,7 @@ const Settings: React.FC = () => {
               <Input type="number" min="0.01" step="0.01" value={valuePerKm} onChange={(event) => setValuePerKm(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Mes</label>
+              <label className="text-sm font-medium text-foreground">Mês</label>
               <Input type="number" min="1" max="12" value={month} onChange={(event) => setMonth(event.target.value)} />
             </div>
             <div className="space-y-2">
@@ -210,7 +210,7 @@ const Settings: React.FC = () => {
           <div className="flex items-center gap-3">
             <Checkbox id="applyToAll" checked={applyToAll} onCheckedChange={(checked) => setApplyToAll(Boolean(checked))} />
             <label htmlFor="applyToAll" className="text-sm text-foreground">
-              Aplicar para todos os usuarios da empresa
+              Aplicar para todos os usuários da empresa
             </label>
           </div>
 
@@ -218,7 +218,7 @@ const Settings: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckSquare className="w-4 h-4" />
-                {selectedIds.length} usuario(s) selecionado(s)
+                {selectedIds.length} usuário(s) selecionado(s)
               </div>
               <div className="max-h-80 overflow-auto rounded-lg border border-border">
                 {targets.map((target) => (
@@ -243,7 +243,7 @@ const Settings: React.FC = () => {
           <div className="flex justify-end">
             <Button onClick={handleApplyRate} disabled={isSaving || selectedCount === 0} className="gap-2">
               <DollarSign className="w-4 h-4" />
-              {isSaving ? 'Aplicando...' : `Aplicar para ${selectedCount} usuario(s)`}
+              {isSaving ? 'Aplicando...' : `Aplicar para ${selectedCount} usuário(s)`}
             </Button>
           </div>
         </CardContent>
@@ -255,7 +255,7 @@ const Settings: React.FC = () => {
             <Building2 className="w-5 h-5" />
             Empresa
           </CardTitle>
-          <CardDescription>Supervisor e admin podem ajustar o endereco principal da empresa.</CardDescription>
+          <CardDescription>Supervisor e admin podem ajustar o endereço principal da empresa.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2 text-sm">
@@ -272,7 +272,7 @@ const Settings: React.FC = () => {
               <Input value={companyAddress.street} onChange={(event) => updateCompanyAddressField('street', event.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Numero</label>
+              <label className="text-sm font-medium text-foreground">Número</label>
               <Input value={companyAddress.number} onChange={(event) => updateCompanyAddressField('number', event.target.value)} />
             </div>
             <div className="space-y-2">
@@ -292,7 +292,7 @@ const Settings: React.FC = () => {
               <Input value={companyAddress.state} onChange={(event) => updateCompanyAddressField('state', event.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Pais</label>
+              <label className="text-sm font-medium text-foreground">País</label>
               <Input value={companyAddress.country} onChange={(event) => updateCompanyAddressField('country', event.target.value)} />
             </div>
             <div className="space-y-2">
@@ -306,13 +306,13 @@ const Settings: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Endereco formatado</label>
+            <label className="text-sm font-medium text-foreground">Endereço formatado</label>
             <Input value={companyAddress.formattedAddress} onChange={(event) => updateCompanyAddressField('formattedAddress', event.target.value)} />
           </div>
 
           <div className="flex justify-end">
             <Button onClick={handleSaveCompanyAddress} disabled={isSavingCompanyAddress}>
-              {isSavingCompanyAddress ? 'Salvando...' : 'Salvar endereco da empresa'}
+              {isSavingCompanyAddress ? 'Salvando...' : 'Salvar endereço da empresa'}
             </Button>
           </div>
         </CardContent>
@@ -322,9 +322,9 @@ const Settings: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5" />
-            Calculo Atual
+            Cálculo Atual
           </CardTitle>
-          <CardDescription>Referencia de tarifa atual do usuario autenticado.</CardDescription>
+          <CardDescription>Referência de tarifa atual do usuário autenticado.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p><strong>R$/km atual:</strong> R$ {currentRate.toFixed(2)}</p>
@@ -337,18 +337,18 @@ const Settings: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <SettingsIcon className="w-5 h-5" />
-            Estado da Integracao
+            Estado da Integração
           </CardTitle>
-          <CardDescription>Resumo do que ja esta usando dados reais.</CardDescription>
+          <CardDescription>Resumo do que já está usando dados reais.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Badge variant="default">Login real</Badge>
           <Badge variant="default">Perfil real</Badge>
-          <Badge variant="default">Presencas reais</Badge>
-          <Badge variant="default">Aprovacao real</Badge>
+          <Badge variant="default">Presenças reais</Badge>
+          <Badge variant="default">Aprovação real</Badge>
           <Badge variant="default">Tarifa em lote real</Badge>
-          <Badge variant="default">Funcionarios reais</Badge>
-          <Badge variant="default">Relatorios reais</Badge>
+          <Badge variant="default">Funcionários reais</Badge>
+          <Badge variant="default">Relatórios reais</Badge>
         </CardContent>
       </Card>
 
@@ -356,14 +356,14 @@ const Settings: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            Permissoes
+            Permissões
           </CardTitle>
           <CardDescription>Perfis suportados atualmente pelo backend.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p><strong>Funcionario:</strong> consulta o proprio perfil, resumo e presencas.</p>
-          <p><strong>Supervisor:</strong> consulta equipe, aprova pendencias, edita usuarios, altera senhas e define tarifas.</p>
-          <p><strong>Admin:</strong> possui os mesmos poderes de gestao e tambem pode registrar as proprias presencas.</p>
+          <p><strong>Funcionário:</strong> consulta o próprio perfil, resumo e presenças.</p>
+          <p><strong>Supervisor:</strong> consulta equipe, aprova pendências, edita usuários, altera senhas e define tarifas.</p>
+          <p><strong>Admin:</strong> possui os mesmos poderes de gestão e também pode registrar as próprias presenças.</p>
         </CardContent>
       </Card>
     </div>

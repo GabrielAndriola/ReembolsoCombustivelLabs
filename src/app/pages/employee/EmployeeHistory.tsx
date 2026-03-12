@@ -71,7 +71,7 @@ const EmployeeHistory: React.FC = () => {
   };
 
   if (isLoading && attendances.length === 0 && summary.totalPresenceDays === 0) {
-    return <LoadingState message="Carregando historico..." />;
+    return <LoadingState message="Carregando histórico..." />;
   }
 
   return (
@@ -80,11 +80,11 @@ const EmployeeHistory: React.FC = () => {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Histórico de Presenças</h1>
           <p className="text-muted-foreground">
-            Visualize todos os seus registros de presenca.
+            Visualize todos os seus registros de presença.
           </p>
           {period && (
             <p className="text-sm text-muted-foreground mt-1">
-              Periodo considerado: {formatPeriodLabel(period)}
+              Período considerado: {formatPeriodLabel(period)}
             </p>
           )}
         </div>
@@ -221,7 +221,7 @@ const EmployeeHistory: React.FC = () => {
         <CardHeader>
           <CardTitle>Detalhamento de Registros</CardTitle>
           <CardDescription>
-            Lista completa de presencas do periodo selecionado
+            Lista completa de presenças do período selecionado
           </CardDescription>
         </CardHeader>
         <CardContent>
