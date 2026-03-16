@@ -1,51 +1,51 @@
-# Arquitetura do Projeto Reembolso Combustivel Labs
+﻿# Arquitetura do Projeto Reembolso Combustivel Labs
 
-## 📁 Estrutura de Diretórios
+## ðŸ“ Estrutura de DiretÃ³rios
 
 ```
 src/
-├── app/
-│   ├── components/          # Componentes reutilizáveis
-│   │   ├── ui/             # Componentes base (shadcn/ui)
-│   │   ├── Layout.tsx      # Layout principal com sidebar
-│   │   ├── EmptyState.tsx  # Estado vazio
-│   │   ├── LoadingState.tsx # Estado de carregamento
-│   │   └── ...             # Outros componentes
-│   ├── contexts/           # Contextos React
-│   │   └── AuthContext.tsx # Gerenciamento de autenticação
-│   ├── lib/                # Utilitários e dados
-│   │   └── mock-data.ts    # Dados de demonstração
-│   ├── pages/              # Páginas da aplicação
-│   │   ├── employee/       # Páginas do funcionário
-│   │   ├── supervisor/     # Páginas do supervisor
-│   │   ├── Login.tsx       # Página de login
-│   │   └── NotFound.tsx    # Página 404
-│   ├── App.tsx             # Componente raiz
-│   └── routes.ts           # Configuração de rotas
-└── styles/                 # Estilos globais
-    ├── theme.css           # Tokens de design
-    ├── tailwind.css        # Importação do Tailwind
-    └── index.css           # Estilos globais
+â”œâ”€â”€ app/
+â”‚   â”œâ”€â”€ components/          # Componentes reutilizÃ¡veis
+â”‚   â”‚   â”œâ”€â”€ ui/             # Componentes base (shadcn/ui)
+â”‚   â”‚   â”œâ”€â”€ Layout.tsx      # Layout principal com sidebar
+â”‚   â”‚   â”œâ”€â”€ EmptyState.tsx  # Estado vazio
+â”‚   â”‚   â”œâ”€â”€ LoadingState.tsx # Estado de carregamento
+â”‚   â”‚   â””â”€â”€ ...             # Outros componentes
+â”‚   â”œâ”€â”€ contexts/           # Contextos React
+â”‚   â”‚   â””â”€â”€ AuthContext.tsx # Gerenciamento de autenticaÃ§Ã£o
+â”‚   â”œâ”€â”€ lib/                # UtilitÃ¡rios e dados
+â”‚   â”‚   â””â”€â”€ mock-data.ts    # Dados de demonstraÃ§Ã£o
+â”‚   â”œâ”€â”€ pages/              # PÃ¡ginas da aplicaÃ§Ã£o
+â”‚   â”‚   â”œâ”€â”€ employee/       # PÃ¡ginas do funcionÃ¡rio
+â”‚   â”‚   â”œâ”€â”€ supervisor/     # PÃ¡ginas do supervisor
+â”‚   â”‚   â”œâ”€â”€ Login.tsx       # PÃ¡gina de login
+â”‚   â”‚   â””â”€â”€ NotFound.tsx    # PÃ¡gina 404
+â”‚   â”œâ”€â”€ App.tsx             # Componente raiz
+â”‚   â””â”€â”€ routes.ts           # ConfiguraÃ§Ã£o de rotas
+â””â”€â”€ styles/                 # Estilos globais
+    â”œâ”€â”€ theme.css           # Tokens de design
+    â”œâ”€â”€ tailwind.css        # ImportaÃ§Ã£o do Tailwind
+    â””â”€â”€ index.css           # Estilos globais
 ```
 
-## 🔄 Fluxo de Dados
+## ðŸ”„ Fluxo de Dados
 
-### Autenticação
-1. **AuthContext** gerencia o estado global de autenticação
-2. Armazena usuário no localStorage para persistência
-3. **ProtectedRoute** protege rotas baseado em autenticação e role
+### AutenticaÃ§Ã£o
+1. **AuthContext** gerencia o estado global de autenticaÃ§Ã£o
+2. Armazena usuÃ¡rio no localStorage para persistÃªncia
+3. **ProtectedRoute** protege rotas baseado em autenticaÃ§Ã£o e role
 
-### Navegação
-1. **React Router Data Mode** gerencia navegação
+### NavegaÃ§Ã£o
+1. **React Router Data Mode** gerencia navegaÃ§Ã£o
 2. Rotas separadas por perfil (employee/supervisor)
-3. Redirecionamento automático baseado em permissões
+3. Redirecionamento automÃ¡tico baseado em permissÃµes
 
 ### Dados Mock
 - Armazenados em `mock-data.ts`
-- Simula funcionários, registros e configurações
-- Pronto para ser substituído por chamadas de API
+- Simula funcionÃ¡rios, registros e configuraÃ§Ãµes
+- Pronto para ser substituÃ­do por chamadas de API
 
-## 🎨 Sistema de Design
+## ðŸŽ¨ Sistema de Design
 
 ### Cores
 Definidas em `/src/styles/theme.css`:
@@ -56,11 +56,11 @@ Definidas em `/src/styles/theme.css`:
 
 ### Componentes Base
 Utilizamos **Radix UI** + **Tailwind CSS**:
-- Acessíveis por padrão
-- Totalmente customizáveis
-- Compatíveis com temas
+- AcessÃ­veis por padrÃ£o
+- Totalmente customizÃ¡veis
+- CompatÃ­veis com temas
 
-## 📱 Responsividade
+## ðŸ“± Responsividade
 
 ### Breakpoints (Tailwind)
 - `sm`: 640px
@@ -68,14 +68,14 @@ Utilizamos **Radix UI** + **Tailwind CSS**:
 - `lg`: 1024px
 - `xl`: 1280px
 
-### Estratégia Mobile-First
-1. Layout mobile por padrão
+### EstratÃ©gia Mobile-First
+1. Layout mobile por padrÃ£o
 2. Melhorias progressivas para desktop
 3. Sidebar responsiva (hamburguer no mobile)
 
-## 🔐 Autenticação e Autorização
+## ðŸ” AutenticaÃ§Ã£o e AutorizaÃ§Ã£o
 
-### Tipos de Usuário
+### Tipos de UsuÃ¡rio
 ```typescript
 type UserRole = 'employee' | 'supervisor';
 
@@ -90,68 +90,68 @@ interface User {
 }
 ```
 
-### Proteção de Rotas
+### ProteÃ§Ã£o de Rotas
 ```typescript
 <ProtectedRoute requiredRole="supervisor">
   <Layout />
 </ProtectedRoute>
 ```
 
-## 📊 Cálculo de Reembolso
+## ðŸ“Š CÃ¡lculo de Reembolso
 
-### Fórmula Base
+### FÃ³rmula Base
 ```
-Valor do Dia = Distância (km) × Valor por KM
+Valor do Dia = DistÃ¢ncia (km) Ã— Valor por KM
 ```
 
-### Variáveis
-- **Distância**: Ida + Volta (configurável por funcionário)
-- **Valor por KM**: R$ 0.85 (padrão, customizável)
+### VariÃ¡veis
+- **DistÃ¢ncia**: Ida + Volta (configurÃ¡vel por funcionÃ¡rio)
+- **Valor por KM**: R$ 0.85 (padrÃ£o, customizÃ¡vel)
 
 ### Exemplo
 ```
-Funcionário mora a 12km da empresa
-Distância diária = 12km × 2 (ida e volta) = 24km
-Valor por dia = 24km × R$ 0.85 = R$ 20.40
+FuncionÃ¡rio mora a 12km da empresa
+DistÃ¢ncia diÃ¡ria = 12km Ã— 2 (ida e volta) = 24km
+Valor por dia = 24km Ã— R$ 0.85 = R$ 20.40
 ```
 
-## 🎯 Funcionalidades por Perfil
+## ðŸŽ¯ Funcionalidades por Perfil
 
-### Funcionário
-- ✅ Dashboard pessoal
-- ✅ Registrar presença
-- ✅ Visualizar histórico próprio
-- ✅ Calendário de presenças
-- ❌ Ver outros funcionários
-- ❌ Configurações do sistema
+### FuncionÃ¡rio
+- âœ… Dashboard pessoal
+- âœ… Registrar presenÃ§a
+- âœ… Visualizar histÃ³rico prÃ³prio
+- âœ… CalendÃ¡rio de presenÃ§as
+- âŒ Ver outros funcionÃ¡rios
+- âŒ ConfiguraÃ§Ãµes do sistema
 
 ### Supervisor
-- ✅ Dashboard gerencial
-- ✅ Visualizar todos os registros
-- ✅ Gerenciar funcionários
-- ✅ Aprovar/rejeitar lançamentos
-- ✅ Configurar sistema
-- ✅ Exportar relatórios
-- ✅ Gráficos e análises
+- âœ… Dashboard gerencial
+- âœ… Visualizar todos os registros
+- âœ… Gerenciar funcionÃ¡rios
+- âœ… Aprovar/rejeitar lanÃ§amentos
+- âœ… Configurar sistema
+- âœ… Exportar relatÃ³rios
+- âœ… GrÃ¡ficos e anÃ¡lises
 
-## 🚀 Integração Futura (Backend)
+## ðŸš€ IntegraÃ§Ã£o Futura (Backend)
 
 ### Endpoints Sugeridos
 
 ```typescript
-// Autenticação
+// AutenticaÃ§Ã£o
 POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
 
-// Funcionários
+// FuncionÃ¡rios
 GET    /api/employees
 GET    /api/employees/:id
 POST   /api/employees
 PUT    /api/employees/:id
 DELETE /api/employees/:id
 
-// Registros de Presença
+// Registros de PresenÃ§a
 GET    /api/attendances
 GET    /api/attendances/:id
 POST   /api/attendances
@@ -160,98 +160,99 @@ DELETE /api/attendances/:id
 POST   /api/attendances/:id/approve
 POST   /api/attendances/:id/reject
 
-// Configurações
+// ConfiguraÃ§Ãµes
 GET    /api/config
 PUT    /api/config
 
-// Relatórios
+// RelatÃ³rios
 GET    /api/reports/consolidated
 GET    /api/reports/detailed
 GET    /api/reports/export/pdf
 GET    /api/reports/export/excel
 ```
 
-## 🧩 Componentes Principais
+## ðŸ§© Componentes Principais
 
 ### Layout
 - Sidebar responsiva
 - Header com busca e perfil
-- Área de conteúdo principal
-- Navegação baseada em role
+- Ãrea de conteÃºdo principal
+- NavegaÃ§Ã£o baseada em role
 
-### Cards de Métricas
+### Cards de MÃ©tricas
 - KPIs visuais
-- Ícones contextuais
+- Ãcones contextuais
 - Cores por categoria
-- Animações sutis
+- AnimaÃ§Ãµes sutis
 
 ### Tabelas
 - Responsivas (cards no mobile)
-- Ordenação e filtros
-- Paginação
-- Ações em linha
+- OrdenaÃ§Ã£o e filtros
+- PaginaÃ§Ã£o
+- AÃ§Ãµes em linha
 
-### Formulários
-- Validação em tempo real
-- Auto-complete de endereços (CEP)
+### FormulÃ¡rios
+- ValidaÃ§Ã£o em tempo real
+- Auto-complete de endereÃ§os (CEP)
 - Feedback visual
 - Estados de loading
 
-## 📈 Performance
+## ðŸ“ˆ Performance
 
-### Otimizações
+### OtimizaÃ§Ãµes
 - Lazy loading de rotas
-- Memoização de componentes pesados
+- MemoizaÃ§Ã£o de componentes pesados
 - Virtual scrolling para listas grandes
 - Debounce em buscas
 
 ### Bundle Size
-- Tree shaking automático
+- Tree shaking automÃ¡tico
 - Code splitting por rota
-- Compressão de assets
+- CompressÃ£o de assets
 
-## 🧪 Testing (Futuro)
+## ðŸ§ª Testing (Futuro)
 
-### Estratégia Sugerida
+### EstratÃ©gia Sugerida
 ```typescript
 // Unit Tests
 - Componentes individuais
-- Funções de cálculo
+- FunÃ§Ãµes de cÃ¡lculo
 - Contextos
 
 // Integration Tests
-- Fluxos de usuário
-- Navegação entre páginas
-- Formulários completos
+- Fluxos de usuÃ¡rio
+- NavegaÃ§Ã£o entre pÃ¡ginas
+- FormulÃ¡rios completos
 
 // E2E Tests
-- Login → Dashboard
-- Registro de presença
-- Aprovação de lançamentos
+- Login â†’ Dashboard
+- Registro de presenÃ§a
+- AprovaÃ§Ã£o de lanÃ§amentos
 ```
 
-## 🔧 Manutenção
+## ðŸ”§ ManutenÃ§Ã£o
 
-### Adicionar Nova Página
+### Adicionar Nova PÃ¡gina
 
 1. Criar componente em `/src/app/pages/`
 2. Adicionar rota em `/src/app/routes.ts`
-3. Adicionar link na navegação em `Layout.tsx`
-4. Proteger com `ProtectedRoute` se necessário
+3. Adicionar link na navegaÃ§Ã£o em `Layout.tsx`
+4. Proteger com `ProtectedRoute` se necessÃ¡rio
 
-### Adicionar Novo Tipo de Usuário
+### Adicionar Novo Tipo de UsuÃ¡rio
 
 1. Atualizar `UserRole` em `AuthContext.tsx`
-2. Adicionar permissões em rotas
-3. Criar páginas específicas
+2. Adicionar permissÃµes em rotas
+3. Criar pÃ¡ginas especÃ­ficas
 4. Atualizar mock data
 
 ### Modificar Tema
 
 1. Editar `/src/styles/theme.css`
 2. Cores CSS variables auto-aplicadas
-3. Tailwind usa as variáveis automaticamente
+3. Tailwind usa as variÃ¡veis automaticamente
 
 ---
 
-Documentação mantida em: 10/03/2026
+DocumentaÃ§Ã£o mantida em: 10/03/2026
+

@@ -4,141 +4,83 @@
 
 - Visao geral do projeto: [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)
 - Setup local: [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
-- Setup com Docker Compose: [docs/DOCKER_COMPOSE.md](docs/DOCKER_COMPOSE.md)
-- Deploy com Docker em servidor: [docs/DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md)
+- Docker local: [docs/DOCKER_COMPOSE.md](docs/DOCKER_COMPOSE.md)
+- Deploy com imagens Docker: [docs/DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md)
 - Deploy com Swarm e Traefik: [docs/DEPLOY_SWARM_TRAEFIK.md](docs/DEPLOY_SWARM_TRAEFIK.md)
-- Deploy do backend em Linux: [docs/DEPLOY_BACKEND_LINUX.md](docs/DEPLOY_BACKEND_LINUX.md)
-- Deploy interno em Windows: [docs/DEPLOY_WINDOWS.md](docs/DEPLOY_WINDOWS.md)
-- Deploy interno em Linux: [docs/DEPLOY_LINUX.md](docs/DEPLOY_LINUX.md)
 
-MVP da plataforma de controle de dias presenciais com cálculo automático de reembolso por quilometragem.
+Sistema interno para controle de presencas presenciais e calculo de reembolso de combustivel por quilometragem.
 
 ## Arquitetura atual
 
 - Frontend: React + Vite + TypeScript + Tailwind
-- Backend: API Node/Express no mesmo repositório
-- Banco: Prisma preparado para PostgreSQL/Supabase
+- Backend: API Node/Express no mesmo repositorio
+- Banco local padrao: PostgreSQL em Docker
+- ORM e validacao: Prisma + Zod
 - Auth: JWT
-- Validação: Zod
-
-Mantive o frontend atual e abstraí o trecho do prompt que exigia Next.js, porque o projeto já nasceu em Vite. O resultado é um MVP funcional mais rápido de evoluir sem reescrever a interface inteira.
 
 ## Estrutura principal
 
-- `src/`: frontend
-- `api/`: rotas HTTP
-- `services/`: regras de negócio
-- `repositories/`: acesso a dados com Prisma
-- `middleware/`: autenticação e tratamento de erros
-- `lib/`: cliente Prisma, env, fallback local
-- `utils/`: JWT, senha, datas, distância
-- `prisma/`: schema e seed
-- `server/`: bootstrap da API
+- `frontend/`: aplicacao frontend
+- `frontend/src/`: codigo React/Vite
+- `backend/`: aplicacao backend
+- `backend/api/`: rotas HTTP
+- `backend/services/`: regras de negocio
+- `backend/repositories/`: acesso a dados com Prisma
+- `backend/middleware/`: autenticacao e tratamento de erros
+- `backend/lib/`: cliente Prisma, env e utilitarios base
+- `backend/utils/`: JWT, senha, datas e helpers
+- `backend/prisma/`: schema e seed
+- `docker-compose.yml`: stack local completa
+- `docker-stack.yml`: deploy com imagens publicadas
 
-## Setup
+## Setup local rapido
 
-1. Instale dependências:
+1. Instale dependencias:
 
 ```bash
 npm install
 ```
 
-2. Revise o arquivo `.env`:
+2. Revise o `.env`:
 
 ```env
-DATABASE_URL="SUPABASE URL"
+DATABASE_URL="postgresql://postgres:12345678@localhost:5432/reembolso_combustivel?schema=public"
+DIRECT_URL="postgresql://postgres:12345678@localhost:5432/reembolso_combustivel?schema=public"
 JWT_SECRET="changeme"
 PORT="3001"
-CORS_ORIGIN="http://localhost:5173"
+CORS_ORIGIN="http://localhost:5173,http://localhost:8080"
 VITE_API_BASE_URL=""
 ```
 
-3. Gere o client Prisma:
+3. Suba a stack local completa:
 
 ```bash
-npm run db:generate
+docker compose up --build -d
 ```
 
-4. Se a sua URL do Supabase estiver correta e acessível:
-
-```bash
-npm run db:push
-npm run db:seed
-```
-
-5. Suba frontend e API juntos:
+4. Se quiser rodar frontend e backend fora do Docker usando o mesmo banco local:
 
 ```bash
 npm run dev
 ```
 
-Frontend: `http://localhost:5173`  
-API: `http://localhost:3001`
+Endpoints locais:
 
-## Rodando backend no Docker Compose
+- frontend Docker: `http://localhost:8080`
+- frontend Vite: `http://localhost:5173`
+- backend: `http://localhost:3000` no Docker ou `http://localhost:3001` fora do Docker
+- banco PostgreSQL: `localhost:5432`
 
-O projeto agora inclui suporte para subir o backend em `docker compose` usando Supabase externo.
+## Padrao atual de Docker
 
-Para o ambiente final:
+Hoje existem dois fluxos reais:
 
-- frontend publicado no Cloudflare Pages
-- backend publicado em Docker na infraestrutura da empresa
-- frontend usando `VITE_API_BASE_URL` para chamar a URL publica da API
-- backend liberando o dominio do frontend via `CORS_ORIGIN`
+- `docker-compose.yml`: ambiente local completo, com Postgres, backend e frontend
+- `docker-stack.yml`: deploy com imagens publicadas e Traefik/rede externa
 
-Fluxo rapido:
+## Observacoes importantes
 
-```bash
-Copy-Item .env.docker.example .env.docker
-docker compose up --build -d
-```
-
-Validacoes:
-
-- API: `http://localhost:3001/api/health`
-- Banco: Supabase externo configurado em `.env.docker`
-- Observacao: neste ambiente, a API em container funcionou com o pooler do Supabase, mas `db:push` precisou continuar fora do container por causa da resolucao da `DIRECT_URL`
-
-Documentacao completa:
-
-- [docs/DOCKER_COMPOSE.md](docs/DOCKER_COMPOSE.md)
-
-## Deploy final na empresa
-
-O desenho final definido para producao ficou assim:
-
-- frontend em imagem Docker
-- backend em imagem Docker
-- PostgreSQL em container Docker
-- Traefik publicando `https://meureembolso.crisdulabs.com.br`
-- Cloudflare apenas no DNS
-
-Documentacao operacional:
-
-- [docs/DEPLOY_SWARM_TRAEFIK.md](docs/DEPLOY_SWARM_TRAEFIK.md)
-
-## Credenciais de demonstração
-
-- Funcionário: `gabriel.andriola@crisdu.com.br`
-- Supervisor: `willian@crisdu.com.br`
-- Admin: `admin@crisdu.com.br`
-- Senha: `12345678`
-
-## O que já está funcionando
-
-- Login com JWT
-- Persistência preparada com Prisma
-- Endpoints:
-  - `POST /api/auth/login`
-  - `GET /api/auth/me`
-  - `GET /api/me/profile`
-  - `GET /api/me/presences`
-  - `POST /api/me/presences`
-  - `GET /api/me/summary`
-  - `GET /api/employees`
-  - `POST /api/employees`
-  - `GET /api/employees/:id`
-  - `GET /api/reports/monthly`
-- Dashboard do funcionário consumindo API
-- Histórico do funcionário consumindo API
-- Registro em lote de dias presenciais
+- o banco local em Docker e persistente via volume `postgres_data`
+- a stack nao faz seed destrutivo automaticamente
+- `docker compose up --build -d` nao deve resetar os dados
+- alteracoes de schema devem continuar sendo feitas no banco existente

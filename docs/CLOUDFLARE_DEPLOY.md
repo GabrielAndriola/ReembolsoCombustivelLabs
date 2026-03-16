@@ -1,4 +1,4 @@
-# Deploy na Cloudflare
+﻿# Deploy na Cloudflare
 
 ## Escopo real deste deploy
 
@@ -58,7 +58,7 @@ DIRECT_URL="postgresql://postgres:[YOUR-PASSWORD]@db.anlywqfolgtupofelvou.supaba
 
 ## Etapa 1: gerar um backend publico
 
-Cloudflare Pages nao vai hospedar este `server/index.ts`. Entao primeiro voce precisa colocar a API em um host Node.
+Cloudflare Pages nao vai hospedar este `backend/server/index.ts`. Entao primeiro voce precisa colocar a API em um host Node.
 
 ### Variaveis do backend
 
@@ -89,10 +89,10 @@ npm run db:push
 npm run db:seed
 ```
 
-Depois iniciar a API em producao com um processo Node/tsx compatível com seu host. Como o repositório nao tem script `start` ainda, o comando atual equivalente e:
+Depois iniciar a API em producao com um processo Node/tsx compatÃ­vel com seu host. Como o repositÃ³rio nao tem script `start` ainda, o comando atual equivalente e:
 
 ```powershell
-npx tsx server/index.ts
+npx tsx backend/server/index.ts
 ```
 
 Se o seu provedor pedir um start command explicito, use esse.
@@ -238,7 +238,7 @@ npm install
 npm run db:generate
 npm run db:push
 npm run db:seed
-npx tsx server/index.ts
+npx tsx backend/server/index.ts
 ```
 
 ### Frontend
@@ -322,7 +322,7 @@ Causa:
 Correcao:
 
 - adicione `VITE_API_BASE_URL=https://sua-api.com`
-- faça novo build/deploy
+- faÃ§a novo build/deploy
 
 ### Abrir rota interna retorna 404
 
@@ -354,3 +354,5 @@ Nao documentei backend rodando dentro de Cloudflare Workers/Pages Functions porq
 - processo Node persistente
 
 Se voce quiser, no proximo passo eu posso fazer uma segunda fase e adaptar o projeto para uma arquitetura mais Cloudflare-native.
+
+

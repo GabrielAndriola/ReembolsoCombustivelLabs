@@ -1,4 +1,4 @@
-# Deploy Interno em Linux
+﻿# Deploy Interno em Linux
 
 ## Objetivo
 
@@ -112,7 +112,7 @@ Type=simple
 User=labsapp
 WorkingDirectory=/opt/reembolso-combustivel-labs
 EnvironmentFile=/opt/reembolso-combustivel-labs/.env
-ExecStart=/usr/bin/node /opt/reembolso-combustivel-labs/node_modules/tsx/dist/cli.mjs /opt/reembolso-combustivel-labs/server/index.ts
+ExecStart=/usr/bin/node /opt/reembolso-combustivel-labs/node_modules/tsx/dist/cli.mjs /opt/reembolso-combustivel-labs/backend/server/index.ts
 Restart=always
 RestartSec=5
 
@@ -258,4 +258,6 @@ Confirme que:
 
 - `DATABASE_URL` usa o pooler
 - `DIRECT_URL` usa a conexao direta
+
+
 

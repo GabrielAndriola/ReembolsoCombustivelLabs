@@ -1,4 +1,4 @@
-# Deploy do Backend em Linux
+﻿# Deploy do Backend em Linux
 
 ## Objetivo
 
@@ -23,16 +23,16 @@ A API atual e:
 
 Ela sobe a partir de:
 
-- `server/index.ts`
+- `backend/server/index.ts`
 
 As rotas ficam em:
 
-- `api/`
+- `backend/api/`
 
 As regras de negocio ficam em:
 
-- `services/`
-- `repositories/`
+- `backend/services/`
+- `backend/repositories/`
 
 ## O que foi ajustado no projeto para isso
 
@@ -282,3 +282,5 @@ CORS_ORIGIN="https://frontend1.interno,https://frontend2.interno"
 - `docs/PROJECT_OVERVIEW.md`
 - `docs/DEPLOY_LINUX.md`
 - `docs/CLOUDFLARE_DEPLOY.md`
+
+

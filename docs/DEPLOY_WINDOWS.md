@@ -1,4 +1,4 @@
-# Deploy Interno em Windows
+﻿# Deploy Interno em Windows
 
 ## Objetivo
 
@@ -19,7 +19,7 @@ Este guia assume:
 ## Arquitetura recomendada
 
 - frontend: IIS servindo a pasta `dist/`
-- API: `node` executando `server/index.ts` por servico
+- API: `node` executando `backend/server/index.ts` por servico
 - acesso interno:
   - frontend: `http://servidor-interno/`
   - API: `http://servidor-interno:3001/` ou via reverse proxy em `/api`
@@ -178,7 +178,7 @@ C:\apps\reembolso-combustivel-labs
 - `Arguments`:
 
 ```text
-node_modules\tsx\dist\cli.mjs server/index.ts
+node_modules\tsx\dist\cli.mjs backend/server/index.ts
 ```
 
 Defina variaveis de ambiente do servico:
@@ -288,4 +288,6 @@ Verifique:
 ### `db push` falha
 
 Use `DIRECT_URL` com a conexao direta do Supabase.
+
+
 

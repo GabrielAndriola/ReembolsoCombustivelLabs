@@ -7,20 +7,12 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-COPY prisma ./prisma
-
-RUN npm ci
-RUN npx prisma generate
-
-COPY api ./api
-COPY lib ./lib
-COPY middleware ./middleware
-COPY repositories ./repositories
-COPY server ./server
-COPY services ./services
-COPY utils ./utils
+COPY backend ./backend
 COPY docker ./docker
 COPY tsconfig.json ./
+
+RUN npm ci
+RUN npx prisma generate --schema backend/prisma/schema.prisma
 
 RUN chmod +x /app/docker/api-entrypoint.sh
 

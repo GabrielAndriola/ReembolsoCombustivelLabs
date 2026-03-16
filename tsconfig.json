@@ -17,8 +17,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["frontend/src/*"]
     }
   },
-  "include": ["src", "api", "server", "services", "repositories", "middleware", "utils", "lib", "prisma"]
+  "include": ["frontend/src", "backend/api", "backend/server", "backend/services", "backend/repositories", "backend/middleware", "backend/utils", "backend/lib", "backend/prisma"]
 }

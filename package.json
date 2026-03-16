@@ -4,18 +4,18 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build --config vite.config.ts",
     "dev": "concurrently \"npm:dev:web\" \"npm:dev:api\"",
-    "dev:web": "vite",
-    "dev:api": "tsx watch server/index.ts",
+    "dev:web": "vite --config vite.config.ts",
+    "dev:api": "tsx watch backend/server/index.ts",
     "start": "npm run start:api",
-    "start:api": "tsx server/index.ts",
+    "start:api": "tsx backend/server/index.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f backend",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:generate": "prisma generate --schema backend/prisma/schema.prisma",
+    "db:push": "prisma db push --schema backend/prisma/schema.prisma",
+    "db:seed": "tsx backend/prisma/seed.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

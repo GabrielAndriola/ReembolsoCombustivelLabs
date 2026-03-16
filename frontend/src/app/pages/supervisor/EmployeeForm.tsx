@@ -1,8 +1,19 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Save, MapPin, User, Building2, KeyRound } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { api, type EmployeeResponse } from '../../lib/api';
+import {
+  buildFormattedAddress,
+  fetchAddressByCep,
+  fetchCitiesByState,
+  fetchNeighborhoodsByAddress,
+  fetchStates,
+  mergeUniqueStrings,
+  sanitizeCep,
+  type CityOption,
+  type StateOption
+} from '../../lib/addressLookup';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -10,14 +21,6 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { LoadingState } from '../../components/LoadingState';
 import { toast } from 'sonner';
-
-const buildFormattedAddress = (formData: {
-  street: string;
-  number: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-}) => `${formData.street}, ${formData.number} - ${formData.neighborhood}, ${formData.city}/${formData.state}`;
 
 const EmployeeForm: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +32,12 @@ const EmployeeForm: React.FC = () => {
   const [employee, setEmployee] = useState<EmployeeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(isExisting);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
+  const [neighborhoodOptions, setNeighborhoodOptions] = useState<string[]>([]);
+  const [isLookingUpCep, setIsLookingUpCep] = useState(false);
+  const lastResolvedCepRef = useRef('');
+  const cepLookupInFlightRef = useRef<string | null>(null);
 
   const [formData, setFormData] = useState({
     role: 'employee',
@@ -49,6 +58,38 @@ const EmployeeForm: React.FC = () => {
     distanceFromCompanyKm: '',
     valuePerKm: '0.65'
   });
+
+  const stateOptions = useMemo(() => {
+    if (!formData.state) {
+      return states;
+    }
+
+    const hasCurrentState = states.some((state) => state.abbreviation === formData.state);
+    return hasCurrentState
+      ? states
+      : [...states, { id: -1, abbreviation: formData.state, name: formData.state }];
+  }, [formData.state, states]);
+
+  const cityOptions = useMemo(() => {
+    if (!formData.city) {
+      return cities;
+    }
+
+    const hasCurrentCity = cities.some((city) => city.name === formData.city);
+    return hasCurrentCity ? cities : [...cities, { id: -1, name: formData.city }];
+  }, [cities, formData.city]);
+
+  useEffect(() => {
+    const loadStates = async () => {
+      try {
+        setStates(await fetchStates());
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os estados.');
+      }
+    };
+
+    loadStates();
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -80,9 +121,9 @@ const EmployeeForm: React.FC = () => {
           valuePerKm: response.reimbursementPerKm?.toString() ?? '0.65',
           password: ''
         }));
-        setIsInitialLoading(false);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Não foi possível carregar o funcionário.');
+        toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar o funcionario.');
+      } finally {
         setIsInitialLoading(false);
       }
     };
@@ -90,8 +131,162 @@ const EmployeeForm: React.FC = () => {
     loadEmployee();
   }, [id]);
 
+  useEffect(() => {
+    if (!formData.state) {
+      setCities([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCities = async () => {
+      try {
+        const nextCities = await fetchCitiesByState(formData.state);
+
+        if (!cancelled) {
+          setCities(nextCities);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar as cidades.');
+        }
+      }
+    };
+
+    loadCities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.state]);
+
+  useEffect(() => {
+    const currentNeighborhood = formData.neighborhood;
+
+    if (!formData.state || !formData.city || formData.street.trim().length < 3) {
+      setNeighborhoodOptions(mergeUniqueStrings([currentNeighborhood]));
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const neighborhoods = await fetchNeighborhoodsByAddress({
+          state: formData.state,
+          city: formData.city,
+          street: formData.street
+        });
+
+        if (!cancelled) {
+          setNeighborhoodOptions(mergeUniqueStrings([currentNeighborhood, ...neighborhoods]));
+        }
+      } catch {
+        if (!cancelled) {
+          setNeighborhoodOptions(mergeUniqueStrings([currentNeighborhood]));
+        }
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [formData.city, formData.neighborhood, formData.state, formData.street]);
+
   const handleChange = (field: string, value: string) => {
-    setFormData((current) => ({ ...current, [field]: value }));
+    setFormData((current) => ({
+      ...current,
+      [field]: field === 'cep' ? sanitizeCep(value) : value
+    }));
+  };
+
+  const handleStateChange = (value: string) => {
+    setFormData((current) => ({
+      ...current,
+      state: value,
+      city: current.state === value ? current.city : '',
+      neighborhood: current.state === value ? current.neighborhood : ''
+    }));
+  };
+
+  const handleCityChange = (value: string) => {
+    setFormData((current) => ({
+      ...current,
+      city: value,
+      neighborhood: current.city === value ? current.neighborhood : ''
+    }));
+  };
+
+  const lookupCep = async (cepValue: string) => {
+    const sanitizedCep = sanitizeCep(cepValue);
+
+    if (
+      sanitizedCep.length !== 8 ||
+      cepLookupInFlightRef.current === sanitizedCep ||
+      lastResolvedCepRef.current === sanitizedCep
+    ) {
+      return;
+    }
+
+    cepLookupInFlightRef.current = sanitizedCep;
+    setIsLookingUpCep(true);
+
+    try {
+      const address = await fetchAddressByCep(sanitizedCep);
+      const nextState = address.state || formData.state;
+      const nextCity = address.city || formData.city;
+      const nextNeighborhood = address.neighborhood || formData.neighborhood;
+
+      setFormData((current) => ({
+        ...current,
+        cep: sanitizeCep(address.zipCode),
+        street: address.street || current.street,
+        complement: current.complement || address.complement,
+        neighborhood: nextNeighborhood,
+        city: nextCity,
+        state: nextState
+      }));
+      setNeighborhoodOptions((current) => mergeUniqueStrings([nextNeighborhood, ...current]));
+      lastResolvedCepRef.current = sanitizedCep;
+
+      if (nextState) {
+        const nextCities = await fetchCitiesByState(nextState);
+        setCities(nextCities);
+      } else {
+        setCities([]);
+      }
+
+      if (nextState && nextCity && (address.street || formData.street).trim().length >= 3) {
+        const nextNeighborhoods = await fetchNeighborhoodsByAddress({
+          state: nextState,
+          city: nextCity,
+          street: address.street || formData.street
+        });
+        setNeighborhoodOptions((current) => mergeUniqueStrings([nextNeighborhood, ...nextNeighborhoods, ...current]));
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel buscar o CEP.');
+    } finally {
+      if (cepLookupInFlightRef.current === sanitizedCep) {
+        cepLookupInFlightRef.current = null;
+      }
+      setIsLookingUpCep(false);
+    }
+  };
+
+  useEffect(() => {
+    const sanitizedCep = sanitizeCep(formData.cep);
+
+    if (sanitizedCep.length !== 8) {
+      lastResolvedCepRef.current = '';
+      return;
+    }
+
+    void lookupCep(sanitizedCep);
+  }, [formData.cep]);
+
+  const handleCepBlur = async () => {
+    await lookupCep(formData.cep);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -115,12 +310,12 @@ const EmployeeForm: React.FC = () => {
       !formData.distanceToCompanyKm ||
       !formData.distanceFromCompanyKm
     ) {
-      toast.error('Preencha todos os campos obrigatórios.');
+      toast.error('Preencha todos os campos obrigatorios.');
       return;
     }
 
     if (!isExisting && !formData.password) {
-      toast.error('Defina a senha inicial do usuário.');
+      toast.error('Defina a senha inicial do usuario.');
       return;
     }
 
@@ -128,7 +323,7 @@ const EmployeeForm: React.FC = () => {
     const distanceFromCompanyKm = Number(formData.distanceFromCompanyKm);
 
     if (distanceToCompanyKm <= 0 || distanceFromCompanyKm <= 0) {
-      toast.error('Informe distâncias válidas de ida e volta em km.');
+      toast.error('Informe distancias validas de ida e volta em km.');
       return;
     }
 
@@ -148,7 +343,7 @@ const EmployeeForm: React.FC = () => {
         password: formData.password || undefined,
         reimbursementPerKm: Number(formData.valuePerKm),
         address: {
-          zipCode: formData.cep,
+          zipCode: sanitizeCep(formData.cep),
           street: formData.street,
           number: formData.number,
           complement: formData.complement || undefined,
@@ -162,10 +357,10 @@ const EmployeeForm: React.FC = () => {
 
       if (isExisting && id) {
         await api.updateEmployee(id, payload);
-        toast.success('Funcionário atualizado com sucesso.');
+        toast.success('Funcionario atualizado com sucesso.');
       } else {
         await api.createEmployee(payload);
-        toast.success('Funcionário cadastrado com sucesso.');
+        toast.success('Funcionario cadastrado com sucesso.');
       }
 
       navigate('/supervisor/employees');
@@ -174,8 +369,8 @@ const EmployeeForm: React.FC = () => {
         error instanceof Error
           ? error.message
           : isExisting
-            ? 'Não foi possível atualizar o funcionário.'
-            : 'Não foi possível cadastrar o funcionário.'
+            ? 'Nao foi possivel atualizar o funcionario.'
+            : 'Nao foi possivel cadastrar o funcionario.'
       );
     } finally {
       setIsLoading(false);
@@ -183,7 +378,7 @@ const EmployeeForm: React.FC = () => {
   };
 
   if (isExisting && isInitialLoading) {
-    return <LoadingState message="Carregando funcionário..." />;
+    return <LoadingState message="Carregando funcionario..." />;
   }
 
   return (
@@ -195,10 +390,10 @@ const EmployeeForm: React.FC = () => {
         </Button>
         <div>
           <h1 className="text-2xl font-semibold text-foreground">
-            {isExisting ? (isEditRoute ? 'Editar Funcionário' : 'Visualizar Funcionário') : 'Novo Funcionário'}
+            {isExisting ? (isEditRoute ? 'Editar Funcionario' : 'Visualizar Funcionario') : 'Novo Funcionario'}
           </h1>
           <p className="text-muted-foreground">
-            {isExisting ? 'Dados atuais do funcionário no banco.' : 'Cadastre um novo funcionário e defina o login inicial.'}
+            {isExisting ? 'Dados atuais do funcionario no banco.' : 'Cadastre um novo funcionario e defina o login inicial.'}
           </p>
         </div>
       </div>
@@ -208,8 +403,8 @@ const EmployeeForm: React.FC = () => {
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">
               {isEditRoute
-                ? 'Atualize os dados do funcionário e salve as alterações.'
-                : 'Esta tela está em modo consulta.'}
+                ? 'Atualize os dados do funcionario e salve as alteracoes.'
+                : 'Esta tela esta em modo consulta.'}
             </p>
           </CardContent>
         </Card>
@@ -222,7 +417,7 @@ const EmployeeForm: React.FC = () => {
               <User className="w-5 h-5" />
               Dados Pessoais
             </CardTitle>
-            <CardDescription>Informações básicas do funcionário</CardDescription>
+            <CardDescription>Informacoes basicas do funcionario</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -233,7 +428,7 @@ const EmployeeForm: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="employee">Funcionário</SelectItem>
+                    <SelectItem value="employee">Funcionario</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
@@ -264,7 +459,7 @@ const EmployeeForm: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="employeeId">Matrícula *</Label>
+                <Label htmlFor="employeeId">Matricula *</Label>
                 <Input id="employeeId" value={formData.employeeId} onChange={(event) => handleChange('employeeId', event.target.value)} disabled={isReadOnly} required />
               </div>
 
@@ -283,7 +478,7 @@ const EmployeeForm: React.FC = () => {
                 <KeyRound className="w-5 h-5" />
                 Login Inicial
               </CardTitle>
-              <CardDescription>Defina a senha inicial que o novo usuário usará para entrar no sistema.</CardDescription>
+              <CardDescription>Defina a senha inicial que o novo usuario usara para entrar no sistema.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-2">
@@ -304,9 +499,9 @@ const EmployeeForm: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="w-5 h-5" />
-                Senha do Usuário
+                Senha do Usuario
               </CardTitle>
-              <CardDescription>Supervisor e admin podem definir uma nova senha quando necessário.</CardDescription>
+              <CardDescription>Supervisor e admin podem definir uma nova senha quando necessario.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <Label htmlFor="password">Nova senha</Label>
@@ -319,18 +514,18 @@ const EmployeeForm: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="w-5 h-5" />
-              Distâncias do Trajeto
+              Distancias do Trajeto
             </CardTitle>
-            <CardDescription>Informe a quilometragem já definida para ida e volta.</CardDescription>
+            <CardDescription>Informe a quilometragem ja definida para ida e volta.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="distanceToCompanyKm">Distância ida (km) *</Label>
+              <Label htmlFor="distanceToCompanyKm">Distancia ida (km) *</Label>
               <Input id="distanceToCompanyKm" type="number" min="0.01" step="0.01" value={formData.distanceToCompanyKm} onChange={(event) => handleChange('distanceToCompanyKm', event.target.value)} disabled={isReadOnly} required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="distanceFromCompanyKm">Distância volta (km) *</Label>
+              <Label htmlFor="distanceFromCompanyKm">Distancia volta (km) *</Label>
               <Input id="distanceFromCompanyKm" type="number" min="0.01" step="0.01" value={formData.distanceFromCompanyKm} onChange={(event) => handleChange('distanceFromCompanyKm', event.target.value)} disabled={isReadOnly} required />
             </div>
           </CardContent>
@@ -358,15 +553,15 @@ const EmployeeForm: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5" />
-              Endereço Residencial
+              Endereco Residencial
             </CardTitle>
-            <CardDescription>Endereço usado no cálculo da quilometragem.</CardDescription>
+            <CardDescription>Endereco usado no calculo da quilometragem.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cep">CEP *</Label>
-                <Input id="cep" value={formData.cep} onChange={(event) => handleChange('cep', event.target.value)} disabled={isReadOnly} />
+                <Input id="cep" value={formData.cep} onChange={(event) => handleChange('cep', event.target.value)} onBlur={handleCepBlur} disabled={isReadOnly || isLookingUpCep} />
               </div>
 
               <div className="md:col-span-2 space-y-2">
@@ -375,7 +570,7 @@ const EmployeeForm: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="number">Número *</Label>
+                <Label htmlFor="number">Numero *</Label>
                 <Input id="number" value={formData.number} onChange={(event) => handleChange('number', event.target.value)} disabled={isReadOnly} />
               </div>
 
@@ -385,18 +580,39 @@ const EmployeeForm: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="neighborhood">Bairro *</Label>
-                <Input id="neighborhood" value={formData.neighborhood} onChange={(event) => handleChange('neighborhood', event.target.value)} disabled={isReadOnly} />
+                <Label htmlFor="state">Estado *</Label>
+                <Select value={formData.state} onValueChange={handleStateChange} disabled={isReadOnly}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stateOptions.map((state) => (
+                      <SelectItem key={state.abbreviation} value={state.abbreviation}>
+                        {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="city">Cidade *</Label>
-                <Input id="city" value={formData.city} onChange={(event) => handleChange('city', event.target.value)} disabled={isReadOnly} />
+                <Input id="city" list="employee-city-options" value={formData.city} onChange={(event) => handleCityChange(event.target.value)} disabled={isReadOnly || !formData.state} />
+                <datalist id="employee-city-options">
+                  {cityOptions.map((city) => (
+                    <option key={`${city.id}-${city.name}`} value={city.name} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="state">Estado *</Label>
-                <Input id="state" value={formData.state} onChange={(event) => handleChange('state', event.target.value)} disabled={isReadOnly} />
+                <Label htmlFor="neighborhood">Bairro *</Label>
+                <Input id="neighborhood" list="employee-neighborhood-options" value={formData.neighborhood} onChange={(event) => handleChange('neighborhood', event.target.value)} disabled={isReadOnly} />
+                <datalist id="employee-neighborhood-options">
+                  {neighborhoodOptions.map((neighborhood) => (
+                    <option key={neighborhood} value={neighborhood} />
+                  ))}
+                </datalist>
               </div>
             </div>
           </CardContent>
@@ -409,13 +625,13 @@ const EmployeeForm: React.FC = () => {
           {!isExisting && (
             <Button type="submit" className="gap-2" disabled={isLoading}>
               <Save className="w-4 h-4" />
-              {isLoading ? 'Salvando...' : 'Cadastrar Funcionário'}
+              {isLoading ? 'Salvando...' : 'Cadastrar Funcionario'}
             </Button>
           )}
           {isEditRoute && (
             <Button type="submit" className="gap-2" disabled={isLoading}>
               <Save className="w-4 h-4" />
-              {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+              {isLoading ? 'Salvando...' : 'Salvar Alteracoes'}
             </Button>
           )}
         </div>
@@ -428,7 +644,7 @@ const EmployeeForm: React.FC = () => {
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-1">
             <p>Perfil: {employee.role}</p>
-            <p>Supervisor: {employee.supervisorName ?? 'Não definido'}</p>
+            <p>Supervisor: {employee.supervisorName ?? 'Nao definido'}</p>
             <p>Ida: {employee.distanceToCompanyKm?.toFixed(2) ?? '-'} km</p>
             <p>Volta: {employee.distanceFromCompanyKm?.toFixed(2) ?? '-'} km</p>
             <p>R$/km: {employee.reimbursementPerKm?.toFixed(2) ?? '-'}</p>
@@ -440,3 +656,8 @@ const EmployeeForm: React.FC = () => {
 };
 
 export default EmployeeForm;
+
+
+
+
+

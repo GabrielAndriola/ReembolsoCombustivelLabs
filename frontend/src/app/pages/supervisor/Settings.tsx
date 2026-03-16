@@ -1,11 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Building2, DollarSign, Settings as SettingsIcon, Shield, CheckSquare } from 'lucide-react';
 import { api, type ProfileResponse, type RateTargetResponse } from '../../lib/api';
+import {
+  buildFormattedAddress,
+  fetchAddressByCep,
+  fetchCitiesByState,
+  fetchNeighborhoodsByAddress,
+  fetchStates,
+  mergeUniqueStrings,
+  sanitizeCep,
+  type CityOption,
+  type StateOption
+} from '../../lib/addressLookup';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Checkbox } from '../../components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { LoadingState } from '../../components/LoadingState';
 import { toast } from 'sonner';
 
@@ -18,6 +30,12 @@ const Settings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingCompanyAddress, setIsSavingCompanyAddress] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLookingUpCep, setIsLookingUpCep] = useState(false);
+  const lastResolvedCepRef = useRef('');
+  const cepLookupInFlightRef = useRef<string | null>(null);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
+  const [neighborhoodOptions, setNeighborhoodOptions] = useState<string[]>([]);
   const [companyAddress, setCompanyAddress] = useState({
     zipCode: '',
     street: '',
@@ -32,6 +50,37 @@ const Settings: React.FC = () => {
     formattedAddress: ''
   });
 
+  const stateOptions = useMemo(() => {
+    if (!companyAddress.state) {
+      return states;
+    }
+
+    const hasCurrentState = states.some((state) => state.abbreviation === companyAddress.state);
+    return hasCurrentState
+      ? states
+      : [...states, { id: -1, abbreviation: companyAddress.state, name: companyAddress.state }];
+  }, [companyAddress.state, states]);
+
+  const cityOptions = useMemo(() => {
+    if (!companyAddress.city) {
+      return cities;
+    }
+
+    const hasCurrentCity = cities.some((city) => city.name === companyAddress.city);
+    return hasCurrentCity ? cities : [...cities, { id: -1, name: companyAddress.city }];
+  }, [cities, companyAddress.city]);
+
+  const syncFormattedAddress = (address: typeof companyAddress) => ({
+    ...address,
+    formattedAddress: buildFormattedAddress({
+      street: address.street,
+      number: address.number,
+      neighborhood: address.district,
+      city: address.city,
+      state: address.state
+    })
+  });
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -44,7 +93,7 @@ const Settings: React.FC = () => {
       setProfile(profileResponse);
       setTargets(targetsResponse);
       setValuePerKm(selectedRate > 0 ? selectedRate.toFixed(2) : '');
-      setCompanyAddress({
+      setCompanyAddress(syncFormattedAddress({
         zipCode: profileResponse.companyAddress?.zipCode ?? '',
         street: profileResponse.companyAddress?.street ?? '',
         number: profileResponse.companyAddress?.number ?? '',
@@ -56,7 +105,7 @@ const Settings: React.FC = () => {
         latitude: profileResponse.companyAddress?.latitude?.toString() ?? '',
         longitude: profileResponse.companyAddress?.longitude?.toString() ?? '',
         formattedAddress: profileResponse.companyAddress?.formattedAddress ?? ''
-      });
+      }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar as configuracoes.');
     } finally {
@@ -65,8 +114,79 @@ const Settings: React.FC = () => {
   };
 
   useEffect(() => {
+    const loadStates = async () => {
+      try {
+        setStates(await fetchStates());
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar os estados.');
+      }
+    };
+
+    loadStates();
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!companyAddress.state) {
+      setCities([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCities = async () => {
+      try {
+        const nextCities = await fetchCitiesByState(companyAddress.state);
+
+        if (!cancelled) {
+          setCities(nextCities);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : 'Nao foi possivel carregar as cidades.');
+        }
+      }
+    };
+
+    loadCities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companyAddress.state]);
+
+  useEffect(() => {
+    const currentNeighborhood = companyAddress.district;
+
+    if (!companyAddress.state || !companyAddress.city || companyAddress.street.trim().length < 3) {
+      setNeighborhoodOptions(mergeUniqueStrings([currentNeighborhood]));
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const neighborhoods = await fetchNeighborhoodsByAddress({
+          state: companyAddress.state,
+          city: companyAddress.city,
+          street: companyAddress.street
+        });
+
+        if (!cancelled) {
+          setNeighborhoodOptions(mergeUniqueStrings([currentNeighborhood, ...neighborhoods]));
+        }
+      } catch {
+        if (!cancelled) {
+          setNeighborhoodOptions(mergeUniqueStrings([currentNeighborhood]));
+        }
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [companyAddress.city, companyAddress.district, companyAddress.state, companyAddress.street]);
 
   const currentRate = profile?.monthlyRates[0]?.reimbursementPerKm ?? 0;
 
@@ -113,10 +233,107 @@ const Settings: React.FC = () => {
   };
 
   const updateCompanyAddressField = (field: keyof typeof companyAddress, value: string) => {
-    setCompanyAddress((current) => ({
+    setCompanyAddress((current) => {
+      const next = {
+        ...current,
+        [field]: field === 'zipCode' ? sanitizeCep(value) : value
+      };
+
+      if (field === 'street' || field === 'number' || field === 'district' || field === 'city' || field === 'state') {
+        return syncFormattedAddress(next);
+      }
+
+      return next;
+    });
+  };
+
+  const handleStateChange = (value: string) => {
+    setCompanyAddress((current) => syncFormattedAddress({
       ...current,
-      [field]: value
+      state: value,
+      city: current.state === value ? current.city : '',
+      district: current.state === value ? current.district : ''
     }));
+  };
+
+  const handleCityChange = (value: string) => {
+    setCompanyAddress((current) => syncFormattedAddress({
+      ...current,
+      city: value,
+      district: current.city === value ? current.district : ''
+    }));
+  };
+
+  const lookupCep = async (cepValue: string) => {
+    const sanitizedCep = sanitizeCep(cepValue);
+
+    if (
+      sanitizedCep.length !== 8 ||
+      cepLookupInFlightRef.current === sanitizedCep ||
+      lastResolvedCepRef.current === sanitizedCep
+    ) {
+      return;
+    }
+
+    cepLookupInFlightRef.current = sanitizedCep;
+    setIsLookingUpCep(true);
+
+    try {
+      const address = await fetchAddressByCep(sanitizedCep);
+      const nextState = address.state || companyAddress.state;
+      const nextCity = address.city || companyAddress.city;
+      const nextDistrict = address.neighborhood || companyAddress.district;
+
+      setCompanyAddress((current) => syncFormattedAddress({
+        ...current,
+        zipCode: sanitizeCep(address.zipCode),
+        street: address.street || current.street,
+        complement: current.complement || address.complement,
+        district: nextDistrict,
+        city: nextCity,
+        state: nextState
+      }));
+      setNeighborhoodOptions((current) => mergeUniqueStrings([nextDistrict, ...current]));
+      lastResolvedCepRef.current = sanitizedCep;
+
+      if (nextState) {
+        const nextCities = await fetchCitiesByState(nextState);
+        setCities(nextCities);
+      } else {
+        setCities([]);
+      }
+
+      if (nextState && nextCity && (address.street || companyAddress.street).trim().length >= 3) {
+        const nextNeighborhoods = await fetchNeighborhoodsByAddress({
+          state: nextState,
+          city: nextCity,
+          street: address.street || companyAddress.street
+        });
+        setNeighborhoodOptions((current) => mergeUniqueStrings([nextDistrict, ...nextNeighborhoods, ...current]));
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Nao foi possivel buscar o CEP.');
+    } finally {
+      if (cepLookupInFlightRef.current === sanitizedCep) {
+        cepLookupInFlightRef.current = null;
+      }
+      setIsLookingUpCep(false);
+    }
+  };
+
+  useEffect(() => {
+    const sanitizedCep = sanitizeCep(companyAddress.zipCode);
+
+    if (sanitizedCep.length !== 8) {
+      lastResolvedCepRef.current = '';
+      return;
+    }
+
+    void lookupCep(sanitizedCep);
+  }, [companyAddress.zipCode]);
+
+  const handleCepBlur = async () => {
+    await lookupCep(companyAddress.zipCode);
   };
 
   const handleSaveCompanyAddress = async () => {
@@ -126,8 +343,7 @@ const Settings: React.FC = () => {
       !companyAddress.number ||
       !companyAddress.district ||
       !companyAddress.city ||
-      !companyAddress.state ||
-      !companyAddress.formattedAddress
+      !companyAddress.state
     ) {
       toast.error('Preencha os campos obrigatorios do endereco da empresa.');
       return;
@@ -137,7 +353,7 @@ const Settings: React.FC = () => {
 
     try {
       await api.updateCompanyAddress({
-        zipCode: companyAddress.zipCode,
+        zipCode: sanitizeCep(companyAddress.zipCode),
         street: companyAddress.street,
         number: companyAddress.number,
         complement: companyAddress.complement || undefined,
@@ -147,7 +363,13 @@ const Settings: React.FC = () => {
         country: companyAddress.country || 'Brasil',
         latitude: companyAddress.latitude ? Number(companyAddress.latitude) : null,
         longitude: companyAddress.longitude ? Number(companyAddress.longitude) : null,
-        formattedAddress: companyAddress.formattedAddress
+        formattedAddress: buildFormattedAddress({
+          street: companyAddress.street,
+          number: companyAddress.number,
+          neighborhood: companyAddress.district,
+          city: companyAddress.city,
+          state: companyAddress.state
+        })
       });
       toast.success('Endereco da empresa atualizado.');
       await loadData();
@@ -243,7 +465,7 @@ const Settings: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">CEP</label>
-              <Input value={companyAddress.zipCode} onChange={(event) => updateCompanyAddressField('zipCode', event.target.value)} />
+              <Input value={companyAddress.zipCode} onChange={(event) => updateCompanyAddressField('zipCode', event.target.value)} onBlur={handleCepBlur} disabled={isLookingUpCep} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Rua</label>
@@ -258,16 +480,37 @@ const Settings: React.FC = () => {
               <Input value={companyAddress.complement} onChange={(event) => updateCompanyAddressField('complement', event.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Bairro</label>
-              <Input value={companyAddress.district} onChange={(event) => updateCompanyAddressField('district', event.target.value)} />
+              <label className="text-sm font-medium text-foreground">Estado</label>
+              <Select value={companyAddress.state} onValueChange={handleStateChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stateOptions.map((state) => (
+                    <SelectItem key={state.abbreviation} value={state.abbreviation}>
+                      {state.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Cidade</label>
-              <Input value={companyAddress.city} onChange={(event) => updateCompanyAddressField('city', event.target.value)} />
+              <Input list="company-city-options" value={companyAddress.city} onChange={(event) => handleCityChange(event.target.value)} disabled={!companyAddress.state} />
+              <datalist id="company-city-options">
+                {cityOptions.map((city) => (
+                  <option key={`${city.id}-${city.name}`} value={city.name} />
+                ))}
+              </datalist>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Estado</label>
-              <Input value={companyAddress.state} onChange={(event) => updateCompanyAddressField('state', event.target.value)} />
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-medium text-foreground">Bairro</label>
+              <Input list="company-neighborhood-options" value={companyAddress.district} onChange={(event) => updateCompanyAddressField('district', event.target.value)} />
+              <datalist id="company-neighborhood-options">
+                {neighborhoodOptions.map((neighborhood) => (
+                  <option key={neighborhood} value={neighborhood} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Pais</label>
@@ -285,7 +528,7 @@ const Settings: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Endereco formatado</label>
-            <Input value={companyAddress.formattedAddress} onChange={(event) => updateCompanyAddressField('formattedAddress', event.target.value)} />
+            <Input value={companyAddress.formattedAddress} readOnly />
           </div>
 
           <div className="flex justify-end">
@@ -349,3 +592,8 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
+
+
+
+
+
