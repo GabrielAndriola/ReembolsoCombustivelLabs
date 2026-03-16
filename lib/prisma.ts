@@ -1,15 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 
 declare global {
-  var __kmPresencialPrisma__: PrismaClient | undefined;
+  var __meuReembolsoPrisma__: PrismaClient | undefined;
 }
 
 export const prisma =
-  globalThis.__kmPresencialPrisma__ ??
+  globalThis.__meuReembolsoPrisma__ ??
   new PrismaClient({
     log: ['error', 'warn']
   });
 
 if (process.env.NODE_ENV !== 'production') {
-  globalThis.__kmPresencialPrisma__ = prisma;
+  globalThis.__meuReembolsoPrisma__ = prisma;
 }

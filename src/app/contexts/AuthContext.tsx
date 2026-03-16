@@ -48,7 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         const authenticatedUser = await api.me();
-        const token = localStorage.getItem('km_presencial_token');
+        const token =
+          localStorage.getItem('meureembolso_token') ??
+          localStorage.getItem('km_presencial_token');
 
         if (token) {
           authStorage.setSession(token, authenticatedUser);

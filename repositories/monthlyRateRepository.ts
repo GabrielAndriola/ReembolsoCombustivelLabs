@@ -1,15 +1,12 @@
 import { prisma } from '../lib/prisma';
 
 export const monthlyRateRepository = {
-  findForMonth(employeeUserId: string, year: number, month: number) {
-    return prisma.monthlyRate.findUnique({
+  findLatest(employeeUserId: string) {
+    return prisma.monthlyRate.findFirst({
       where: {
-        employeeUserId_year_month: {
-          employeeUserId,
-          year,
-          month
-        }
-      }
+        employeeUserId
+      },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }]
     });
   }
 };

@@ -33,7 +33,7 @@ export const employeeRepository = {
         },
         monthlyRates: {
           orderBy: [{ year: 'desc' }, { month: 'desc' }],
-          take: 12
+          take: 1
         }
       }
     });

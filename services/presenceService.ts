@@ -95,12 +95,10 @@ export const presenceService = {
 
     for (const date of uniqueDates) {
       const parsedDate = toDateOnly(date);
-      const year = parsedDate.getUTCFullYear();
-      const month = parsedDate.getUTCMonth() + 1;
-      const monthlyRate = await monthlyRateRepository.findForMonth(employeeUserId, year, month);
+      const monthlyRate = await monthlyRateRepository.findLatest(employeeUserId);
 
       if (!monthlyRate) {
-        throw new AppError(`Nao existe valor por km configurado para ${month}/${year}.`, 400);
+        throw new AppError('Nao existe valor por km configurado para este colaborador.', 400);
       }
 
       const reimbursementPerKmApplied = toNumber(monthlyRate.reimbursementPerKm);

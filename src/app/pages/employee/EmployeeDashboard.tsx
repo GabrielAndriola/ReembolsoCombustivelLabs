@@ -52,7 +52,7 @@ const EmployeeDashboard: React.FC = () => {
   const lastAttendance = [...monthlyAttendances].sort(
     (a, b) => new Date(b.presenceDate).getTime() - new Date(a.presenceDate).getTime()
   )[0];
-  const currentRate = profile?.monthlyRates.find((rate) => rate.year === currentYear && rate.month === currentMonth);
+  const currentRate = profile?.monthlyRates[0];
   const totalDailyDistanceKm = profile?.totalDailyDistanceKm ?? monthlyAttendances[0]?.distanceRoundTripKm ?? 0;
   const elapsedBusinessDays = period ? countBusinessDaysElapsed(period) : 0;
   const registeredElapsedDays = period ? countRegisteredDaysElapsed(period, monthlyAttendances) : 0;

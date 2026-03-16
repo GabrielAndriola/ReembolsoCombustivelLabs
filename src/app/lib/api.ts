@@ -87,8 +87,6 @@ export interface EmployeeResponse {
   distanceFromCompanyKm: number | null;
   totalDailyDistanceKm: number | null;
   reimbursementPerKm: number | null;
-  reimbursementRateMonth?: number | null;
-  reimbursementRateYear?: number | null;
   homeAddress: AddressResponse | null;
 }
 
@@ -168,8 +166,6 @@ export interface CreateEmployeePayload {
   distanceToCompanyKm: number;
   distanceFromCompanyKm: number;
   password?: string;
-  year: number;
-  month: number;
   reimbursementPerKm: number;
   address: {
     zipCode: string;
@@ -186,11 +182,15 @@ export interface CreateEmployeePayload {
   };
 }
 
-const STORAGE_TOKEN_KEY = 'km_presencial_token';
-const STORAGE_USER_KEY = 'km_presencial_user';
+const STORAGE_TOKEN_KEY = 'meureembolso_token';
+const STORAGE_USER_KEY = 'meureembolso_user';
+const LEGACY_STORAGE_TOKEN_KEY = 'km_presencial_token';
+const LEGACY_STORAGE_USER_KEY = 'km_presencial_user';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
-const getToken = () => localStorage.getItem(STORAGE_TOKEN_KEY);
+const getToken = () =>
+  localStorage.getItem(STORAGE_TOKEN_KEY) ??
+  localStorage.getItem(LEGACY_STORAGE_TOKEN_KEY);
 
 const request = async <T>(path: string, options: RequestInit = {}) => {
   const token = getToken();
@@ -213,16 +213,22 @@ const request = async <T>(path: string, options: RequestInit = {}) => {
 
 export const authStorage = {
   getUser() {
-    const raw = localStorage.getItem(STORAGE_USER_KEY);
+    const raw =
+      localStorage.getItem(STORAGE_USER_KEY) ??
+      localStorage.getItem(LEGACY_STORAGE_USER_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
   },
   setSession(token: string, user: AuthUser) {
     localStorage.setItem(STORAGE_TOKEN_KEY, token);
     localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user));
+    localStorage.removeItem(LEGACY_STORAGE_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_USER_KEY);
   },
   clear() {
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_USER_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_USER_KEY);
   }
 };
 
@@ -298,8 +304,6 @@ export const api = {
   },
 
   applyRate(payload: {
-    year: number;
-    month: number;
     reimbursementPerKm: number;
     applyToAll: boolean;
     userIds?: string[];

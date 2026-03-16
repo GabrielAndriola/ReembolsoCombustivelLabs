@@ -47,9 +47,7 @@ const EmployeeForm: React.FC = () => {
     state: 'SP',
     distanceToCompanyKm: '',
     distanceFromCompanyKm: '',
-    valuePerKm: '0.65',
-    month: '3',
-    year: '2026'
+    valuePerKm: '0.65'
   });
 
   useEffect(() => {
@@ -80,8 +78,6 @@ const EmployeeForm: React.FC = () => {
           distanceToCompanyKm: response.distanceToCompanyKm?.toString() ?? '',
           distanceFromCompanyKm: response.distanceFromCompanyKm?.toString() ?? '',
           valuePerKm: response.reimbursementPerKm?.toString() ?? '0.65',
-          month: response.reimbursementRateMonth?.toString() ?? current.month,
-          year: response.reimbursementRateYear?.toString() ?? current.year,
           password: ''
         }));
         setIsInitialLoading(false);
@@ -150,8 +146,6 @@ const EmployeeForm: React.FC = () => {
         distanceToCompanyKm,
         distanceFromCompanyKm,
         password: formData.password || undefined,
-        year: Number(formData.year),
-        month: Number(formData.month),
         reimbursementPerKm: Number(formData.valuePerKm),
         address: {
           zipCode: formData.cep,
@@ -349,20 +343,12 @@ const EmployeeForm: React.FC = () => {
                 <KeyRound className="w-5 h-5" />
                 Tarifa Atual
               </CardTitle>
-              <CardDescription>Atualize a competência e o valor por km do colaborador.</CardDescription>
+              <CardDescription>Atualize o valor por km do colaborador.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="valuePerKm">R$/km *</Label>
                 <Input id="valuePerKm" type="number" step="0.01" value={formData.valuePerKm} onChange={(event) => handleChange('valuePerKm', event.target.value)} disabled={isReadOnly} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="month">Mês *</Label>
-                <Input id="month" type="number" min="1" max="12" value={formData.month} onChange={(event) => handleChange('month', event.target.value)} disabled={isReadOnly} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="year">Ano *</Label>
-                <Input id="year" type="number" min="2024" value={formData.year} onChange={(event) => handleChange('year', event.target.value)} disabled={isReadOnly} required />
               </div>
             </CardContent>
           </Card>
@@ -415,28 +401,6 @@ const EmployeeForm: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
-        {!isExisting && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="w-5 h-5" />
-                Competência Inicial
-              </CardTitle>
-              <CardDescription>Mês e ano da tarifa inicial do colaborador.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="month">Mês *</Label>
-                <Input id="month" type="number" min="1" max="12" value={formData.month} onChange={(event) => handleChange('month', event.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="year">Ano *</Label>
-                <Input id="year" type="number" min="2024" value={formData.year} onChange={(event) => handleChange('year', event.target.value)} required />
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => navigate('/supervisor/employees')}>

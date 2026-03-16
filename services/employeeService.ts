@@ -54,6 +54,14 @@ const getTotalDailyDistanceKm = (profile?: {
   };
 };
 
+const getCurrentRatePeriod = () => {
+  const now = new Date();
+  return {
+    year: now.getUTCFullYear(),
+    month: now.getUTCMonth() + 1
+  };
+};
+
 export const employeeService = {
   async getProfile(userId: string) {
     const cacheKey = `employee:profile:${userId}`;
@@ -113,8 +121,6 @@ export const employeeService = {
       department: user.employeeProfile?.department ?? '',
       supervisorName: user.employeeProfile?.supervisor?.name ?? null,
       reimbursementPerKm: user.monthlyRates[0] ? toNumber(user.monthlyRates[0].reimbursementPerKm) : null,
-      reimbursementRateMonth: user.monthlyRates[0]?.month ?? null,
-      reimbursementRateYear: user.monthlyRates[0]?.year ?? null,
       homeAddress: formatAddress(user.employeeAddresses[0])
     })), READ_TTL_MS);
   },
@@ -162,6 +168,7 @@ export const employeeService = {
     }
 
     const passwordHash = await hashPassword(payload.password ?? '12345678');
+    const ratePeriod = getCurrentRatePeriod();
 
     return prisma.$transaction(async (transaction) => {
       const address = await transaction.address.create({
@@ -205,8 +212,8 @@ export const employeeService = {
           },
           monthlyRates: {
             create: {
-              year: payload.year,
-              month: payload.month,
+              year: ratePeriod.year,
+              month: ratePeriod.month,
               reimbursementPerKm: payload.reimbursementPerKm
             }
           }
@@ -242,9 +249,11 @@ export const employeeService = {
       throw new AppError('Ja existe um funcionario com essa matricula.', 409);
     }
 
-    const rateYear = payload.year ?? existingEmployee.monthlyRates[0]?.year ?? new Date().getUTCFullYear();
-    const rateMonth = payload.month ?? existingEmployee.monthlyRates[0]?.month ?? new Date().getUTCMonth() + 1;
     const passwordHash = payload.password ? await hashPassword(payload.password) : null;
+    const existingRate = existingEmployee.monthlyRates[0];
+    const ratePeriod = existingRate
+      ? { year: existingRate.year, month: existingRate.month }
+      : getCurrentRatePeriod();
 
     await prisma.$transaction(async (transaction) => {
       await transaction.user.update({
@@ -318,8 +327,8 @@ export const employeeService = {
         where: {
           employeeUserId_year_month: {
             employeeUserId: employeeId,
-            year: rateYear,
-            month: rateMonth
+            year: ratePeriod.year,
+            month: ratePeriod.month
           }
         },
         update: {
@@ -327,8 +336,8 @@ export const employeeService = {
         },
         create: {
           employeeUserId: employeeId,
-          year: rateYear,
-          month: rateMonth,
+          year: ratePeriod.year,
+          month: ratePeriod.month,
           reimbursementPerKm: payload.reimbursementPerKm
         }
       });
@@ -401,8 +410,6 @@ export const employeeService = {
   },
 
   async applyRate(companyId: string, payload: {
-    year: number;
-    month: number;
     reimbursementPerKm: number;
     applyToAll: boolean;
     userIds?: string[];
@@ -418,14 +425,35 @@ export const employeeService = {
       throw new AppError('Nenhum usuario elegivel foi selecionado para atualizar a tarifa.', 400);
     }
 
-    await prisma.$transaction(
-      targetIds.map((employeeUserId) =>
-        prisma.monthlyRate.upsert({
+    const existingRates = await prisma.monthlyRate.findMany({
+      where: {
+        employeeUserId: {
+          in: targetIds
+        }
+      },
+      orderBy: [{ employeeUserId: 'asc' }, { year: 'desc' }, { month: 'desc' }]
+    });
+
+    const latestRateByUser = new Map<string, (typeof existingRates)[number]>();
+    for (const rate of existingRates) {
+      if (!latestRateByUser.has(rate.employeeUserId)) {
+        latestRateByUser.set(rate.employeeUserId, rate);
+      }
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      for (const employeeUserId of targetIds) {
+        const existingRate = latestRateByUser.get(employeeUserId);
+        const ratePeriod = existingRate
+          ? { year: existingRate.year, month: existingRate.month }
+          : getCurrentRatePeriod();
+
+        await transaction.monthlyRate.upsert({
           where: {
             employeeUserId_year_month: {
               employeeUserId,
-              year: payload.year,
-              month: payload.month
+              year: ratePeriod.year,
+              month: ratePeriod.month
             }
           },
           update: {
@@ -433,20 +461,21 @@ export const employeeService = {
           },
           create: {
             employeeUserId,
-            year: payload.year,
-            month: payload.month,
+            year: ratePeriod.year,
+            month: ratePeriod.month,
             reimbursementPerKm: payload.reimbursementPerKm
           }
-        })
-      )
-    );
+        });
+      }
+    });
 
     cache.deleteByPrefix(`employee:list:${companyId}`);
     cache.deleteByPrefix(`report:monthly:${companyId}:`);
 
     for (const targetId of targetIds) {
       cache.delete(`employee:profile:${targetId}`);
-      cache.delete(`presence:summary:${targetId}:${payload.year}:${payload.month}`);
+      cache.deleteByPrefix(`presence:list:${targetId}:`);
+      cache.deleteByPrefix(`presence:summary:${targetId}:`);
     }
 
     return {

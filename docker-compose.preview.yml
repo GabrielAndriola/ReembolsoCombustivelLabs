@@ -23,7 +23,7 @@ services:
       PORT: ${PORT:-3000}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
       PRISMA_DB_PUSH: ${PRISMA_DB_PUSH:-true}
-      PRISMA_DB_SEED: ${PRISMA_DB_SEED:-true}
+      PRISMA_DB_SEED: ${PRISMA_DB_SEED:-false}
       PRISMA_SEED_MODE: ${PRISMA_SEED_MODE:-full}
 
   frontend:

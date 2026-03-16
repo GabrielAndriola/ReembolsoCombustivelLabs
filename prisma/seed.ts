@@ -25,6 +25,12 @@ const buildAddress = (data: {
 });
 
 async function main() {
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+    throw new Error(
+      'Seed bloqueado para proteger dados reais. Defina ALLOW_DESTRUCTIVE_SEED=true apenas se quiser resetar e recriar o banco.'
+    );
+  }
+
   await prisma.presenceRecord.deleteMany();
   await prisma.monthlyRate.deleteMany();
   await prisma.employeeAddress.deleteMany();

@@ -23,6 +23,24 @@ const CRISDU_XLSX_THEME = {
   white: 'FFFFFFFF'
 };
 
+const loadExcelWorkbook = async () => {
+  const excelJsModule = await import('exceljs/dist/exceljs.min.js');
+  const excelJsFromModule =
+    excelJsModule.default ??
+    (excelJsModule as { ExcelJS?: unknown }).ExcelJS ??
+    excelJsModule;
+  const excelJsFromGlobal = (globalThis as { ExcelJS?: unknown }).ExcelJS;
+  const Workbook =
+    (excelJsFromModule as { Workbook?: new () => any })?.Workbook ??
+    (excelJsFromGlobal as { Workbook?: new () => any })?.Workbook;
+
+  if (!Workbook) {
+    throw new Error('ExcelJS Workbook export not found.');
+  }
+
+  return Workbook;
+};
+
 const Reports: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState('3');
   const [selectedYear, setSelectedYear] = useState('2026');
@@ -127,7 +145,7 @@ const Reports: React.FC = () => {
   };
 
   const exportCsv = () => {
-    const headers = ['Unidade', 'Código', 'Colaborador', 'TOTAL KM / DIA', 'QNTD DIAS NO MÊS', 'TOTAL R$', 'Observação'];
+    const headers = ['Equipe', 'Código', 'Colaborador', 'TOTAL KM / DIA', 'QNTD DIAS NO MÊS', 'TOTAL R$', 'Observação'];
     const rows = operationalRows.map((row) => [
       row.unit,
       row.code,
@@ -152,15 +170,7 @@ const Reports: React.FC = () => {
 
   const exportFormattedExcel = async () => {
     try {
-      const excelJsModule = await import('exceljs');
-      const Workbook =
-        excelJsModule.Workbook ??
-        excelJsModule.default?.Workbook;
-
-      if (!Workbook) {
-        throw new Error('ExcelJS Workbook export not found.');
-      }
-
+      const Workbook = await loadExcelWorkbook();
       const workbook = new Workbook();
       const worksheet = workbook.addWorksheet('Relatório Operacional', {
         views: [{ state: 'frozen', ySplit: 3 }]
@@ -222,7 +232,7 @@ const Reports: React.FC = () => {
       ];
 
       worksheet.getRow(3).values = [
-        'Unidade',
+        'Equipe',
         'Código',
         'Colaborador',
         'TOTAL KM / DIA',
@@ -316,8 +326,10 @@ const Reports: React.FC = () => {
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
+      const fileContents = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
+
       downloadBlob(
-        new Blob([buffer], {
+        new Blob([fileContents], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         }),
         `relatorio-operacional-${selectedYear}-${selectedMonth}.xlsx`
@@ -325,7 +337,14 @@ const Reports: React.FC = () => {
 
       toast.success('Excel formatado exportado com sucesso.');
     } catch (error) {
-      toast.error('Não foi possível gerar o arquivo Excel formatado.');
+      console.error('Excel export failed', error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : JSON.stringify(error);
+      toast.error(errorMessage || 'Não foi possível gerar o arquivo Excel formatado.');
     }
   };
 
