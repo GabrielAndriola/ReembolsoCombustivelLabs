@@ -24,7 +24,7 @@ O banco nao sobe no `compose`:
 
 ## Arquivos usados
 
-- `docker-compose.yml`
+- `infra/docker-compose.yml`
 - `Dockerfile.api`
 - `docker/api-entrypoint.sh`
 - `.env.docker`

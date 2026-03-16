@@ -4,14 +4,14 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  root: path.resolve(__dirname, 'frontend'),
+  root: __dirname,
   plugins: [
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './frontend/src'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
@@ -23,7 +23,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: path.resolve(__dirname, '../dist'),
     emptyOutDir: true,
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],

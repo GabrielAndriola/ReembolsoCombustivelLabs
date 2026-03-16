@@ -4,6 +4,7 @@
 
 - Frontend React/Vite em `frontend/`
 - API Node/Express com Prisma em `backend/`
+- Infraestrutura local em `infra/`
 - Banco PostgreSQL local em Docker
 
 ## Fluxos disponiveis
@@ -11,7 +12,7 @@
 ### 1. Stack completa em Docker
 
 ```powershell
-docker compose up --build -d
+docker compose -f infra/docker-compose.yml up --build -d
 ```
 
 Endpoints:
@@ -36,9 +37,11 @@ Endpoints:
 ## Arquivos principais
 
 - `frontend/src/app/lib/api.ts`
+- `frontend/vite.config.ts`
 - `backend/server/index.ts`
 - `backend/prisma/schema.prisma`
 - `backend/prisma/seed.ts`
+- `infra/docker-compose.yml`
 
 ## Comandos uteis
 
@@ -46,9 +49,10 @@ Endpoints:
 npm run db:generate
 npm run db:push
 npm run db:seed
+npm run docker:up
 Invoke-RestMethod -Uri "http://localhost:3001/api/health"
 ```
 
 ## Observacao
 
-O projeto foi reorganizado fisicamente em `frontend/` e `backend/`, mas continua usando um unico `package.json` na raiz para manter o fluxo simples.
+O projeto foi reorganizado fisicamente em `frontend/`, `backend/` e `infra/`, mas continua usando um unico `package.json` na raiz para manter o fluxo simples.

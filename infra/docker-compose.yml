@@ -1,4 +1,4 @@
-﻿name: meureembolso
+name: meureembolso
 
 services:
   db:
@@ -15,8 +15,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ..
+      dockerfile: infra/Dockerfile.api
     restart: unless-stopped
     depends_on:
       - db
@@ -34,8 +34,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ..
+      dockerfile: infra/Dockerfile.frontend
       args:
         VITE_API_BASE_URL: ${DOCKER_VITE_API_BASE_URL:-}
     restart: unless-stopped

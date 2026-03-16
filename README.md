@@ -10,18 +10,11 @@
 
 Sistema interno para controle de presencas presenciais e calculo de reembolso de combustivel por quilometragem.
 
-## Arquitetura atual
-
-- Frontend: React + Vite + TypeScript + Tailwind
-- Backend: API Node/Express no mesmo repositorio
-- Banco local padrao: PostgreSQL em Docker
-- ORM e validacao: Prisma + Zod
-- Auth: JWT
-
 ## Estrutura principal
 
 - `frontend/`: aplicacao frontend
 - `frontend/src/`: codigo React/Vite
+- `frontend/public/`: assets publicos
 - `backend/`: aplicacao backend
 - `backend/api/`: rotas HTTP
 - `backend/services/`: regras de negocio
@@ -30,57 +23,42 @@ Sistema interno para controle de presencas presenciais e calculo de reembolso de
 - `backend/lib/`: cliente Prisma, env e utilitarios base
 - `backend/utils/`: JWT, senha, datas e helpers
 - `backend/prisma/`: schema e seed
-- `docker-compose.yml`: stack local completa
-- `docker-stack.yml`: deploy com imagens publicadas
+- `infra/`: Dockerfiles, compose e arquivos de operacao
+- `docs/`: documentacao
 
 ## Setup local rapido
 
-1. Instale dependencias:
-
 ```bash
 npm install
+docker compose -f infra/docker-compose.yml up --build -d
 ```
 
-2. Revise o `.env`:
-
-```env
-DATABASE_URL="postgresql://postgres:12345678@localhost:5432/reembolso_combustivel?schema=public"
-DIRECT_URL="postgresql://postgres:12345678@localhost:5432/reembolso_combustivel?schema=public"
-JWT_SECRET="changeme"
-PORT="3001"
-CORS_ORIGIN="http://localhost:5173,http://localhost:8080"
-VITE_API_BASE_URL=""
-```
-
-3. Suba a stack local completa:
-
-```bash
-docker compose up --build -d
-```
-
-4. Se quiser rodar frontend e backend fora do Docker usando o mesmo banco local:
+Se quiser rodar frontend e backend fora do Docker usando o mesmo banco local:
 
 ```bash
 npm run dev
 ```
 
-Endpoints locais:
+## Endpoints locais
 
 - frontend Docker: `http://localhost:8080`
 - frontend Vite: `http://localhost:5173`
-- backend: `http://localhost:3000` no Docker ou `http://localhost:3001` fora do Docker
+- backend Docker: `http://localhost:3000`
+- backend fora do Docker: `http://localhost:3001`
 - banco PostgreSQL: `localhost:5432`
 
-## Padrao atual de Docker
+## Scripts principais
 
-Hoje existem dois fluxos reais:
+- `npm run build`
+- `npm run dev`
+- `npm run db:generate`
+- `npm run db:push`
+- `npm run docker:up`
+- `npm run docker:down`
 
-- `docker-compose.yml`: ambiente local completo, com Postgres, backend e frontend
-- `docker-stack.yml`: deploy com imagens publicadas e Traefik/rede externa
+## Padrao atual
 
-## Observacoes importantes
+- `infra/docker-compose.yml`: ambiente local completo
+- `infra/docker-stack.yml`: deploy com imagens publicadas e rede externa
 
-- o banco local em Docker e persistente via volume `postgres_data`
-- a stack nao faz seed destrutivo automaticamente
-- `docker compose up --build -d` nao deve resetar os dados
-- alteracoes de schema devem continuar sendo feitas no banco existente
+O banco local em Docker e persistente e nao deve ser resetado automaticamente ao subir a stack.

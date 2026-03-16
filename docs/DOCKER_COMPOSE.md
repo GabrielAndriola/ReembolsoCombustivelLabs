@@ -1,4 +1,4 @@
-﻿# Docker Compose Local
+# Docker Compose Local
 
 ## Objetivo
 
@@ -8,19 +8,19 @@ Subir o ambiente local completo do `meureembolso` com:
 - backend Node/Express
 - frontend estatico servido por Nginx
 
-A stack padrao do projeto agora e somente `docker-compose.yml`.
+A stack padrao do projeto agora fica em `infra/docker-compose.yml`.
 
 ## Arquivos usados
 
-- `docker-compose.yml`
-- `Dockerfile.api`
-- `Dockerfile.frontend`
-- `docker/api-entrypoint.sh`
+- `infra/docker-compose.yml`
+- `infra/Dockerfile.api`
+- `infra/Dockerfile.frontend`
+- `infra/docker/api-entrypoint.sh`
 
 ## Subida rapida
 
 ```powershell
-docker compose up --build -d
+docker compose -f infra/docker-compose.yml up --build -d
 ```
 
 Ou:
@@ -35,30 +35,6 @@ npm run docker:up
 - backend: `http://localhost:3000`
 - banco: `localhost:5432`
 
-## Variaveis de ambiente locais
-
-O backend fora do Docker usa o `.env` padrao:
-
-```env
-DATABASE_URL="postgresql://postgres:12345678@localhost:5432/reembolso_combustivel?schema=public"
-DIRECT_URL="postgresql://postgres:12345678@localhost:5432/reembolso_combustivel?schema=public"
-JWT_SECRET="changeme"
-PORT="3001"
-CORS_ORIGIN="http://localhost:5173,http://localhost:8080"
-VITE_API_BASE_URL=""
-```
-
-No Compose, a stack usa defaults internos e pode ser sobrescrita por variaveis `DOCKER_*` se necessario:
-
-- `DOCKER_DATABASE_URL`
-- `DOCKER_DIRECT_URL`
-- `DOCKER_JWT_SECRET`
-- `DOCKER_CORS_ORIGIN`
-- `DOCKER_PRISMA_DB_PUSH`
-- `DOCKER_PRISMA_DB_SEED`
-- `DOCKER_PRISMA_SEED_MODE`
-- `DOCKER_VITE_API_BASE_URL`
-
 ## Persistencia do banco
 
 O volume `postgres_data` preserva os dados entre reinicios.
@@ -72,13 +48,11 @@ Importante:
 ## Comandos uteis
 
 ```powershell
-docker compose ps
-docker compose logs -f backend
-docker compose down
+docker compose -f infra/docker-compose.yml ps
+docker compose -f infra/docker-compose.yml logs -f backend
+docker compose -f infra/docker-compose.yml down
 ```
 
-## Quando usar `docker-stack.yml`
+## Quando usar `infra/docker-stack.yml`
 
-`docker-stack.yml` continua existindo apenas para deploy com imagens publicadas e Traefik/rede externa.
-
-Ele nao faz parte do fluxo local diario.
+`infra/docker-stack.yml` continua existindo apenas para deploy com imagens publicadas e Traefik/rede externa.

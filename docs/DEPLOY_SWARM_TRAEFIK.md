@@ -34,7 +34,7 @@ Nesse modelo:
 - `Dockerfile.api`
 - `Dockerfile.frontend`
 - `docker/nginx/frontend.conf`
-- `docker-stack.yml`
+- `infra/docker-stack.yml`
 
 ## Imagens Docker
 
@@ -59,7 +59,7 @@ Dominio informado:
 meureembolso.crisdulabs.com.br
 ```
 
-## O que o `docker-stack.yml` faz
+## O que o `infra/docker-stack.yml` faz
 
 ### db
 
@@ -70,7 +70,7 @@ meureembolso.crisdulabs.com.br
 ### backend
 
 - sobe a API Node/Express
-- usa o serviço `db` da stack
+- usa o serviÃ§o `db` da stack
 - fica somente na rede interna `rede_company`
 
 ### frontend
@@ -155,9 +155,9 @@ docker build -f Dockerfile.frontend --build-arg VITE_API_BASE_URL=https://api.se
 1. abra `Stacks`
 2. crie uma stack nova ou atualize a existente
 3. use `meureembolso` como nome da stack
-4. use o conteudo de `docker-stack.yml`
+4. use o conteudo de `infra/docker-stack.yml`
 5. cadastre as variaveis da stack
-6. faça o deploy
+6. faÃ§a o deploy
 
 ## Como o dominio funciona
 
@@ -167,7 +167,7 @@ O Traefik publica:
 https://meureembolso.crisdulabs.com.br
 ```
 
-O roteamento configurado no `docker-stack.yml` envia esse host para o servico:
+O roteamento configurado no `infra/docker-stack.yml` envia esse host para o servico:
 
 - `frontend`
 
@@ -268,7 +268,7 @@ PRISMA_DB_SEED=false
 3. buildar imagem do frontend
 4. enviar imagem do frontend para `docker.crisdulabs.com.br`
 5. configurar Postgres e variaveis no Portainer
-6. subir `docker-stack.yml`
+6. subir `infra/docker-stack.yml`
 7. deixar `PRISMA_DB_PUSH=true` e `PRISMA_DB_SEED=true` no primeiro deploy
 8. depois voltar ambas para `false`
 9. apontar o DNS do dominio para a infra da empresa
